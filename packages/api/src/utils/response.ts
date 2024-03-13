@@ -1,5 +1,5 @@
 import { Context } from "hono";
-import type { ContextEnv } from "../types";
+import type { ContextEnv } from "../types.js";
 
 interface RequestError {
   message?: string;

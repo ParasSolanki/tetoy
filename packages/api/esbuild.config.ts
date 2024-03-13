@@ -3,7 +3,7 @@ import { buildSync } from "esbuild";
 buildSync({
   entryPoints: ["./src/index.ts"],
   format: "esm",
-  target: "esnext",
+  target: "es2022",
   platform: "node",
   //   minify: true,
   bundle: true,

@@ -2,25 +2,25 @@ import { db, userKeysTable, userPasswordsTable, usersTable } from "@tetoy/db";
 import { and, eq } from "@tetoy/db/drizzle";
 import { getCookie } from "hono/cookie";
 import { Argon2id } from "oslo/password";
-import { PROVIDER_KEYS } from "../constants/provider";
-import { env } from "../env";
-import { lucia } from "../lib/lucia";
+import { PROVIDER_KEYS } from "../constants/provider.js";
+import { env } from "../env.js";
+import { lucia } from "../lib/lucia.js";
 import {
   csrfRoute,
   sessionRoute,
   signinRoute,
   signoutRoute,
   signupRoute,
-} from "../openapi/auth.openapi";
-import { createCsrfToken, validateCsrfToken } from "../utils/csrf-token";
-import { createOpenApiHono } from "../utils/openapi-hono";
+} from "../openapi/auth.openapi.js";
+import { createCsrfToken, validateCsrfToken } from "../utils/csrf-token.js";
+import { createOpenApiHono } from "../utils/openapi-hono.js";
 import {
   badRequestError,
   conflictError,
   forbiddenError,
   internalServerError,
   unauthorizedError,
-} from "../utils/response";
+} from "../utils/response.js";
 
 export const route = createOpenApiHono()
   .openapi(signupRoute, async (c) => {

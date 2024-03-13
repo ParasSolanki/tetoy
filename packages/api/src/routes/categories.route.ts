@@ -17,13 +17,13 @@ import {
   getCategoryRoute,
   getPaginatedCategoriesRoute,
   updateCategoryRoute,
-} from "../openapi/categories.openapi";
-import { createProtectedOpenApiHono } from "../utils/openapi-hono";
+} from "../openapi/categories.openapi.js";
+import { createProtectedOpenApiHono } from "../utils/openapi-hono.js";
 import {
   badRequestError,
   conflictError,
   internalServerError,
-} from "../utils/response";
+} from "../utils/response.js";
 
 export const route = createProtectedOpenApiHono()
   .openapi(getPaginatedCategoriesRoute, async (c) => {

@@ -1,8 +1,8 @@
 import { db, usersTable } from "@tetoy/db";
 import { eq } from "@tetoy/db/drizzle";
-import { updateMeDisplayNameRoute } from "../openapi/me.openapi";
-import { createProtectedOpenApiHono } from "../utils/openapi-hono";
-import { internalServerError } from "../utils/response";
+import { updateMeDisplayNameRoute } from "../openapi/me.openapi.js";
+import { createProtectedOpenApiHono } from "../utils/openapi-hono.js";
+import { internalServerError } from "../utils/response.js";
 
 export const route = createProtectedOpenApiHono().openapi(
   updateMeDisplayNameRoute,
@@ -15,6 +15,7 @@ export const route = createProtectedOpenApiHono().openapi(
         .update(usersTable)
         .set({
           displayName,
+          updatedAt: new Date(),
         })
         .where(eq(usersTable.id, authUser.id));
 

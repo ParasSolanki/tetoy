@@ -3,11 +3,11 @@ import {
   badRequestErrorSchema,
   forbiddenErrorSchema,
   internalServerErrorSchema,
-} from "../common/schema";
+} from "../common/schema.js";
 import {
   updateMeDisplayNameResponseSchema,
   updateMeDisplayNameSchema,
-} from "../common/me.schema";
+} from "../common/me.schema.js";
 
 export const updateMeDisplayNameRoute = createRoute({
   path: "/display-name",

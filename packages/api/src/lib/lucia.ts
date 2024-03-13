@@ -1,7 +1,7 @@
 import { client } from "@tetoy/db";
 import { LibSQLAdapter } from "@lucia-auth/adapter-sqlite";
 import { Lucia, TimeSpan } from "lucia";
-import { env } from "../env";
+import { env } from "../env.js";
 
 const adapter = new LibSQLAdapter(client, {
   user: "users",

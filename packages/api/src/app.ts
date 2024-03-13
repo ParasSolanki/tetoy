@@ -1,8 +1,13 @@
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
 import { swaggerUI } from "@hono/swagger-ui";
-import { authRoutes, categoryRoutes, meRoutes, productRoutes } from "./routes";
-import { createOpenApiHono } from "./utils/openapi-hono";
+import {
+  authRoutes,
+  categoryRoutes,
+  meRoutes,
+  productRoutes,
+} from "./routes/index.js";
+import { createOpenApiHono } from "./utils/openapi-hono.js";
 
 export const app = createOpenApiHono()
   .doc31("/doc", {

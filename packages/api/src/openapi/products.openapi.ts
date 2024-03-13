@@ -4,7 +4,7 @@ import {
   conflictErrorSchema,
   forbiddenErrorSchema,
   internalServerErrorSchema,
-} from "../common/schema";
+} from "../common/schema.js";
 import {
   createProductResponseSchema,
   createProductSchema,
@@ -16,7 +16,7 @@ import {
   paginatedProductsSearchSchema,
   updateProductResponseSchema,
   updateProductSchema,
-} from "../common/product.schema";
+} from "../common/product.schema.js";
 
 const productIdSchema = z.string().openapi({
   param: {

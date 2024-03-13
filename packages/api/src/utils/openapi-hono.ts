@@ -1,12 +1,12 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { getCookie } from "hono/cookie";
-import { lucia } from "../lib/lucia";
+import { lucia } from "../lib/lucia.js";
 import { cors } from "hono/cors";
-import { env } from "../env";
+import { env } from "../env.js";
 import { createMiddleware } from "hono/factory";
 import { verifyRequestOrigin } from "oslo/request";
-import { badRequestError, forbiddenError } from "./response";
-import { ContextEnv } from "../types";
+import { badRequestError, forbiddenError } from "./response.js";
+import { ContextEnv } from "../types.js";
 
 export function createOpenApiHono() {
   const app = new OpenAPIHono<ContextEnv>({

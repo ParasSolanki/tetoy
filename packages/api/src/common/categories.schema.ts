@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { successSchema } from "./schema";
+import { successSchema } from "./schema.js";
 
 export const paginatedCategoriesSearchSchema = z.object({
   name: z.string().optional(),

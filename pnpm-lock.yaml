@@ -214,16 +214,16 @@ importers:
         version: 1.8.2
       '@hono/swagger-ui':
         specifier: ^0.2.1
-        version: 0.2.1(hono@4.0.10)
+        version: 0.2.1(hono@4.1.0)
       '@hono/zod-openapi':
         specifier: ^0.9.8
-        version: 0.9.8(hono@4.0.10)(zod@3.22.4)
+        version: 0.9.8(hono@4.1.0)(zod@3.22.4)
       '@hono/zod-validator':
         specifier: ^0.2.0
-        version: 0.2.0(hono@4.0.10)(zod@3.22.4)
+        version: 0.2.0(hono@4.1.0)(zod@3.22.4)
       '@lucia-auth/adapter-sqlite':
-        specifier: ^3.0.0
-        version: 3.0.0(lucia@3.0.1)
+        specifier: ^3.0.1
+        version: 3.0.1(lucia@3.1.1)
       '@t3-oss/env-core':
         specifier: ^0.9.2
         version: 0.9.2(typescript@5.4.2)(zod@3.22.4)
@@ -234,11 +234,11 @@ importers:
         specifier: ^0.20.1
         version: 0.20.1
       hono:
-        specifier: ^4.0.10
-        version: 4.0.10
+        specifier: ^4.1.0
+        version: 4.1.0
       lucia:
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.1
+        version: 3.1.1
       oslo:
         specifier: ^1.1.3
         version: 1.1.3
@@ -255,6 +255,9 @@ importers:
       tsx:
         specifier: ^4.7.1
         version: 4.7.1
+      typescript:
+        specifier: ^5.4.2
+        version: 5.4.2
 
   packages/db:
     dependencies:
@@ -1219,15 +1222,15 @@ packages:
     engines: {node: '>=18.14.1'}
     dev: false
 
-  /@hono/swagger-ui@0.2.1(hono@4.0.10):
+  /@hono/swagger-ui@0.2.1(hono@4.1.0):
     resolution: {integrity: sha512-wBxVMRe3/v8xH4o6icmwztiIq0DG0s7+jHVMHVUAoFFCWEQNL2iskMmQtrhSDtsFmBZUeUFQUaaJ6Ir6DOmHLA==}
     peerDependencies:
       hono: '*'
     dependencies:
-      hono: 4.0.10
+      hono: 4.1.0
     dev: false
 
-  /@hono/zod-openapi@0.9.8(hono@4.0.10)(zod@3.22.4):
+  /@hono/zod-openapi@0.9.8(hono@4.1.0)(zod@3.22.4):
     resolution: {integrity: sha512-NS6lvQEGnsjyQkp+aQjMARREz3WGf19y0+RiiJMVrihWlmKbGaJkPuOWpfFQG6FU9q+FVUyUCryXK+3J07GPAw==}
     engines: {node: '>=16.0.0'}
     peerDependencies:
@@ -1235,28 +1238,28 @@ packages:
       zod: 3.*
     dependencies:
       '@asteasolutions/zod-to-openapi': 5.5.0(zod@3.22.4)
-      '@hono/zod-validator': 0.1.11(hono@4.0.10)(zod@3.22.4)
-      hono: 4.0.10
+      '@hono/zod-validator': 0.1.11(hono@4.1.0)(zod@3.22.4)
+      hono: 4.1.0
       zod: 3.22.4
     dev: false
 
-  /@hono/zod-validator@0.1.11(hono@4.0.10)(zod@3.22.4):
+  /@hono/zod-validator@0.1.11(hono@4.1.0)(zod@3.22.4):
     resolution: {integrity: sha512-PQXeHUP0+36qpRt8yfeD7N2jbK3ETlGvSN6dMof/HwUC/APRokQRjpXZm4rrlG71Ft0aWE01+Bm4XejqPie5Uw==}
     peerDependencies:
       hono: '>=3.9.0'
       zod: ^3.19.1
     dependencies:
-      hono: 4.0.10
+      hono: 4.1.0
       zod: 3.22.4
     dev: false
 
-  /@hono/zod-validator@0.2.0(hono@4.0.10)(zod@3.22.4):
+  /@hono/zod-validator@0.2.0(hono@4.1.0)(zod@3.22.4):
     resolution: {integrity: sha512-PC7akbA/DCFY406BL3+ogjYb+7Fgfs/6XPvyURBYMczo0M7kYsTUMnF8hA9mez1RORNCWPqXuFGfKrkoUVPvrQ==}
     peerDependencies:
       hono: '>=3.9.0'
       zod: ^3.19.1
     dependencies:
-      hono: 4.0.10
+      hono: 4.1.0
       zod: 3.22.4
     dev: false
 
@@ -1451,8 +1454,8 @@ packages:
     dev: false
     optional: true
 
-  /@lucia-auth/adapter-sqlite@3.0.0(lucia@3.0.1):
-    resolution: {integrity: sha512-7XMfMMNziFOoqIq2u9W5Z+wo7G7lzNQfUh7wDlkIqKxJMSLtP6GKH+QpK+21X4ZY9dIDmiuiwqZmS3Q3CgpATw==}
+  /@lucia-auth/adapter-sqlite@3.0.1(lucia@3.1.1):
+    resolution: {integrity: sha512-bzr8+HALrbiYMb/+oL1SAnjbgFqlPs/Kj4lO57t/VvbXzmbpQEKk5Nv6hMpvWSkGAR9LbxYeQAtecikpKZVB0w==}
     peerDependencies:
       '@libsql/client': ^0.3.0
       better-sqlite3: 8.x - 9.x
@@ -1463,7 +1466,7 @@ packages:
       better-sqlite3:
         optional: true
     dependencies:
-      lucia: 3.0.1
+      lucia: 3.1.1
     dev: false
 
   /@napi-rs/wasm-runtime@0.1.1:
@@ -4862,8 +4865,8 @@ packages:
     resolution: {integrity: sha512-2bsegYkkHO+h/9MGbn6KWcE45cHZgPANo5LXF7EvWdT0yT2EguSVO1nDgU5c8+ZOPwp2vMNa7YFsJhVcDR9Sdg==}
     dev: true
 
-  /hono@4.0.10:
-    resolution: {integrity: sha512-sq0RFAC3Ij+bkhZu90EGAQnVI1EhohRsjo9BU+BjXLbC71GSy41JjsFqCeg8MRpO2Gdu0A4MXF5licO89tn/rw==}
+  /hono@4.1.0:
+    resolution: {integrity: sha512-9no6DCHb4ijB1tWdFXU6JnrnFgzwVZ1cnIcS1BjAFnMcjbtBTOMsQrDrPH3GXbkNEEEkj8kWqcYBy8Qc0bBkJQ==}
     engines: {node: '>=16.0.0'}
     dev: false
 
@@ -5109,8 +5112,8 @@ packages:
       es5-ext: 0.10.64
     dev: true
 
-  /lucia@3.0.1:
-    resolution: {integrity: sha512-srwUkTCGgr6N4mFpaKZVZy5kwiRZdsrbIDv9Wrjar+xyw1MjojYQQ7oRbegjRWOZ3yI8xOOclK3sz/rga2J7/w==}
+  /lucia@3.1.1:
+    resolution: {integrity: sha512-Ygvgnqq7Ha7lYVaZATPwkPD2s2Qlsm71Z2o0byx/abNBfFldCRow5sNii6RqMsuMpK957RAI3Gw4/aWoagkc7A==}
     dependencies:
       oslo: 1.0.1
     dev: false

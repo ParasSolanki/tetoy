@@ -1,6 +1,6 @@
 import { serve } from "@hono/node-server";
-import { env } from "./env";
-import { app } from "./app";
+import { env } from "./env.js";
+import { app } from "./app.js";
 
 const PORT = env.PORT;
 

@@ -22,13 +22,13 @@ import {
   getPaginatedProductsRoute,
   getProductRoute,
   updateProductRoute,
-} from "../openapi/products.openapi";
-import { createProtectedOpenApiHono } from "../utils/openapi-hono";
+} from "../openapi/products.openapi.js";
+import { createProtectedOpenApiHono } from "../utils/openapi-hono.js";
 import {
   badRequestError,
   conflictError,
   internalServerError,
-} from "../utils/response";
+} from "../utils/response.js";
 
 export const route = createProtectedOpenApiHono()
   .openapi(getPaginatedProductsRoute, async (c) => {
@@ -409,6 +409,7 @@ export const route = createProtectedOpenApiHono()
           updatedById: authUser.id,
           updatedAt: date,
         })
+        .where(eq(productsTable.id, param.id))
         .returning({
           id: productsTable.id,
           name: productsTable.name,

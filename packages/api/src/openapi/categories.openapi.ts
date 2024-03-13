@@ -4,7 +4,7 @@ import {
   conflictErrorSchema,
   forbiddenErrorSchema,
   internalServerErrorSchema,
-} from "../common/schema";
+} from "../common/schema.js";
 import {
   createCategoryResponseSchema,
   createCategorySchema,
@@ -16,7 +16,7 @@ import {
   paginatedCategoriesSearchSchema,
   updateCategoryResponseSchema,
   updateCategorySchema,
-} from "../common/categories.schema";
+} from "../common/categories.schema.js";
 
 const categoryIdSchema = z.string().openapi({
   param: {

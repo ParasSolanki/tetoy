@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { successSchema } from "./schema";
+import { successSchema } from "./schema.js";
 
 export const updateMeDisplayNameSchema = z.object({
   displayName: z

@@ -1,4 +1,4 @@
-export { route as authRoutes } from "./auth.route";
-export { route as meRoutes } from "./me.route";
-export { route as categoryRoutes } from "./categories.route";
-export { route as productRoutes } from "./products.route";
+export { route as authRoutes } from "./auth.route.js";
+export { route as meRoutes } from "./me.route.js";
+export { route as categoryRoutes } from "./categories.route.js";
+export { route as productRoutes } from "./products.route.js";

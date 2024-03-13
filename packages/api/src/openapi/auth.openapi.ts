@@ -3,7 +3,7 @@ import {
   authResponseSchema,
   authSchema,
   csrfTokenResponseSchema,
-} from "../common/auth.schema";
+} from "../common/auth.schema.js";
 import {
   badRequestErrorSchema,
   conflictErrorSchema,
@@ -11,7 +11,7 @@ import {
   internalServerErrorSchema,
   successSchema,
   unauthorizedErrorSchema,
-} from "../common/schema";
+} from "../common/schema.js";
 
 const headersSchema = z.object({
   "x-csrf-token": z
