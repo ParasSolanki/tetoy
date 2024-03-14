@@ -12,7 +12,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { SheetFooter } from "~/components/ui/sheet";
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -122,6 +122,9 @@ export function CategoryForm({
               disabled={isPending}
               aria-disabled={isPending}
             >
+              {isPending && (
+                <Loader2Icon className="mr-2 size-4 animate-spin" />
+              )}
               Save
             </Button>
           </SheetFooter>

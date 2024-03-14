@@ -27,7 +27,7 @@ export const Route = createLazyFileRoute("/_auth/categories")({
 
 function CategoriesPage() {
   return (
-    <>
+    <div className="pb-8">
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-black">Categories</h1>
 
@@ -36,7 +36,7 @@ function CategoriesPage() {
         </div>
       </div>
       <CategoriesTable />
-    </>
+    </div>
   );
 }
 

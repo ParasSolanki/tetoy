@@ -43,7 +43,7 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <AppRoutes />
       <ReactQueryDevtools position="right" />
-      <Toaster richColors className="font-sans" position="top-right" />
+      <Toaster richColors className="font-sans" position="bottom-right" />
     </QueryClientProvider>
   );
 }

@@ -15,12 +15,11 @@ import type {
   VisibilityState,
 } from "@tanstack/react-table";
 import {
-  deleteCatgoryResponseSchema,
-  paginatedCategoriesResponseSchema,
-  updateCategoryResponseSchema,
-  updateCategorySchema,
+  deleteProductResponseSchema,
+  paginatedProductsResponseSchema,
+  updateProductResponseSchema,
 } from "@tetoy/api/schema";
-import { categoriesKeys, categoriesQuries } from "~/common/keys/categories";
+import { productsKeys, productsQuries } from "~/common/keys/products";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,19 +32,19 @@ import {
 } from "~/components/ui/alert-dialog";
 import { DataTableViewOptions } from "~/components/ui/data-table/data-table-view-options";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "~/components/ui/sheet";
 import {
   TableBody,
   TableCell,
@@ -54,7 +53,7 @@ import {
   TableRow,
   Table as UiTable,
 } from "~/components/ui/table";
-import { Route as CategoriesRoute } from "~/routes/_auth/categories/route";
+import { Route as ProductsRoute } from "~/routes/_auth/products/route";
 import { api } from "~/utils/api-client";
 import { format } from "date-fns";
 import { HTTPError } from "ky";
@@ -63,18 +62,18 @@ import * as React from "react";
 import { toast } from "sonner";
 import { useDebounceCallback } from "usehooks-ts";
 import { z } from "zod";
-import { CategoryForm } from "./category-form";
+import { ProductForm } from "./product-form";
 import { Button } from "./ui/button";
 import { DataTableColumnHeader } from "./ui/data-table/data-table-column-header";
 import { DataTablePagination } from "./ui/data-table/data-table-pagination";
 
-const categoriesSchema = paginatedCategoriesResponseSchema.shape.data.pick({
-  categories: true,
-}).shape.categories;
+const productsSchema = paginatedProductsResponseSchema.shape.data.pick({
+  products: true,
+}).shape.products;
 
-type Category = z.infer<typeof categoriesSchema>[number];
+type Product = z.infer<typeof productsSchema>[number];
 
-const columns: ColumnDef<Category>[] = [
+const columns: ColumnDef<Product>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (
@@ -100,15 +99,13 @@ const columns: ColumnDef<Category>[] = [
     header: () => (
       <div className="flex h-8 items-center font-medium">Actions</div>
     ),
-    cell: ({ row, table }) => (
-      <CategoriesTableActions row={row} table={table} />
-    ),
+    cell: ({ row, table }) => <ProductsTableActions row={row} table={table} />,
   },
 ];
 
-export function CategoriesTable() {
+export function ProductsTable() {
   const navigate = useNavigate();
-  const searchParams = CategoriesRoute.useSearch({
+  const searchParams = ProductsRoute.useSearch({
     select: (search) => search,
   });
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -127,10 +124,10 @@ export function CategoriesTable() {
     [pageIndex, pageSize],
   );
 
-  const { data } = useQuery(categoriesQuries.list(searchParams));
+  const { data } = useQuery(productsQuries.list(searchParams));
 
   const table = useReactTable({
-    data: data?.data.categories ?? [],
+    data: data?.data.products ?? [],
     columns,
     state: {
       sorting,
@@ -150,12 +147,12 @@ export function CategoriesTable() {
 
   React.useEffect(() => {
     navigate({
-      to: "/categories",
+      to: "/products",
       search: {
         name: searchParams.name,
         page: searchParams.page,
         perPage: searchParams.perPage,
-        category: searchParams.category,
+        product: searchParams.product,
       },
       replace: true,
     });
@@ -163,7 +160,7 @@ export function CategoriesTable() {
 
   return (
     <div className="mt-10 space-y-4">
-      <CategoriesTableToolbar table={table} />
+      <ProductsTableToolbar table={table} />
       <div className="rounded-md border">
         <UiTable>
           <TableHeader>
@@ -207,7 +204,7 @@ export function CategoriesTable() {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No Categories.
+                  No Products.
                 </TableCell>
               </TableRow>
             )}
@@ -219,18 +216,18 @@ export function CategoriesTable() {
   );
 }
 
-interface CategoriesToolbarProps<TData> {
+interface ProductsToolbarProps<TData> {
   table: Table<TData>;
 }
 
-export function CategoriesTableToolbar<TData>({
+export function ProductsTableToolbar<TData>({
   table,
-}: CategoriesToolbarProps<TData>) {
+}: ProductsToolbarProps<TData>) {
   const navigate = useNavigate();
   const debounced = useDebounceCallback((value: string) => {
     table.setGlobalFilter(value);
     navigate({
-      to: "/categories",
+      to: "/products",
       search: {
         name: value,
         page: table.getState().pagination.pageIndex,
@@ -254,35 +251,35 @@ export function CategoriesTableToolbar<TData>({
   );
 }
 
-interface CategoriesTableActionsProps {
-  table: Table<Category>;
-  row: Row<Category>;
+interface ProductsTableActionsProps {
+  table: Table<Product>;
+  row: Row<Product>;
 }
 
-export function CategoriesTableActions({
+export function ProductsTableActions({
   row,
   table,
-}: CategoriesTableActionsProps) {
-  const category = row.original;
+}: ProductsTableActionsProps) {
+  const product = row.original;
   const navigate = useNavigate();
-  const searchCategory = CategoriesRoute.useSearch({
-    select: (search) => search.category,
+  const searchProduct = ProductsRoute.useSearch({
+    select: (search) => search.product,
   });
-  const [isEditSheetOpen, setIsEditSheetOpen] = React.useState(
-    () => searchCategory === category.id,
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(
+    () => searchProduct === product.id,
   );
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
-  function handleOpenEditCategorySheet(open: boolean) {
-    setIsEditSheetOpen(open);
+  function handleOpenEditProductDialog(open: boolean) {
+    setIsEditDialogOpen(open);
 
     navigate({
-      to: "/categories",
+      to: "/products",
       search: {
         name: table.getState().globalFilter,
         page: table.getState().pagination.pageIndex,
         perPage: table.getState().pagination.pageSize,
-        ...(open ? { category: category.id } : {}),
+        ...(open ? { product: product.id } : {}),
       },
       replace: true,
     });
@@ -303,7 +300,7 @@ export function CategoriesTableActions({
         <DropdownMenuContent align="end" className="w-[160px]">
           <DropdownMenuItem
             className="focus:cursor-pointer"
-            onSelect={() => handleOpenEditCategorySheet(true)}
+            onSelect={() => handleOpenEditProductDialog(true)}
           >
             <PencilIcon className="mr-2 size-4" /> Edit
           </DropdownMenuItem>
@@ -316,65 +313,64 @@ export function CategoriesTableActions({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <EditCategorySheet
-        open={isEditSheetOpen}
-        category={category}
-        onOpenChange={handleOpenEditCategorySheet}
+      <EditProductDialog
+        open={isEditDialogOpen}
+        product={product}
+        onOpenChange={handleOpenEditProductDialog}
       />
-      <DeleteCategoryAlertDialog
+      <DeleteProductAlertDialog
         open={isDeleteDialogOpen}
-        categoryId={category.id}
+        productId={product.id}
         onOpenChange={setIsDeleteDialogOpen}
       />
     </>
   );
 }
 
-interface EditCategorySheetProps {
+interface EditProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  category: Category;
+  product: Product;
 }
 
-function EditCategorySheet({
-  category,
+function EditProductDialog({
+  product,
   open,
   onOpenChange,
-}: EditCategorySheetProps) {
+}: EditProductDialogProps) {
   const queryClient = useQueryClient();
   const { isPending, mutate } = useMutation({
-    mutationKey: ["categories", "edit", category.id],
+    mutationKey: ["products", "edit", product.id],
     mutationFn: async (values: unknown) => {
-      const res = api.put(`categories/${category.id}`, { json: values });
+      const res = api.put(`products/${product.id}`, { json: values });
 
-      return updateCategoryResponseSchema.parse(await res.json());
+      return updateProductResponseSchema.parse(await res.json());
     },
     onSuccess: () => {
-      toast.success("Category updated successfully");
-      queryClient.invalidateQueries({ queryKey: categoriesKeys.all });
+      toast.success("Product updated successfully");
+      queryClient.invalidateQueries({ queryKey: productsKeys.all });
     },
     onError: async (error) => {
       if (error instanceof HTTPError) {
         const data = await error.response.json();
         if (data.message) toast.error(data.message);
       } else {
-        toast.error("Something went wrong while updating category");
+        toast.error("Something went wrong while updating product");
       }
     },
   });
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Edit Category</SheetTitle>
-          <SheetDescription>
-            Edit category details here. Click save when you are done.
-          </SheetDescription>
-        </SheetHeader>
-        <CategoryForm
-          category={category}
-          schema={updateCategorySchema}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Product</DialogTitle>
+          <DialogDescription>
+            Edit product details here. Click save when you are done.
+          </DialogDescription>
+        </DialogHeader>
+        <ProductForm
+          product={product}
           isPending={isPending}
           onSubmit={(values) => {
             mutate(values, {
@@ -384,40 +380,40 @@ function EditCategorySheet({
             });
           }}
         />
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-interface DeleteCategoryAlertDialogProps {
+interface DeleteProductAlertDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  categoryId: string;
+  productId: string;
 }
 
-function DeleteCategoryAlertDialog({
+function DeleteProductAlertDialog({
   open,
   onOpenChange,
-  categoryId,
-}: DeleteCategoryAlertDialogProps) {
+  productId,
+}: DeleteProductAlertDialogProps) {
   const queryClient = useQueryClient();
   const { mutate } = useMutation({
-    mutationKey: ["categories", "delete", categoryId],
+    mutationKey: ["products", "delete", productId],
     mutationFn: async () => {
-      const res = await api.delete(`categories/${categoryId}`);
+      const res = await api.delete(`products/${productId}`);
 
-      return deleteCatgoryResponseSchema.parse(await res.json());
+      return deleteProductResponseSchema.parse(await res.json());
     },
     onSuccess: () => {
-      toast.success("Category deleted successfuly");
-      queryClient.invalidateQueries({ queryKey: categoriesKeys.all });
+      toast.success("Product deleted successfuly");
+      queryClient.invalidateQueries({ queryKey: productsKeys.all });
     },
     onError: async (error) => {
       if (error instanceof HTTPError) {
         const data = await error.response.json();
         if (data.message) toast.error(data.message);
       } else {
-        toast.error("Something went wrong while deleting category");
+        toast.error("Something went wrong while deleting product");
       }
     },
   });
@@ -428,7 +424,7 @@ function DeleteCategoryAlertDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will delete category.
+            This action cannot be undone. This will delete product.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
