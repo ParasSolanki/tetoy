@@ -1,5 +1,7 @@
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import {
+  getAllCategoriesResponseSchema,
+  getAllCategoriesSearchSchema,
   paginatedCategoriesResponseSchema,
   paginatedCategoriesSearchSchema,
 } from "@tetoy/api/schema";
@@ -10,6 +12,8 @@ export const categoriesKeys = {
   all: ["categories"] as const,
   list: (values: z.infer<typeof paginatedCategoriesSearchSchema>) =>
     [...categoriesKeys.all, "list", values] as const,
+  infinite: (values: z.infer<typeof getAllCategoriesSearchSchema>) =>
+    [...categoriesKeys.all, "infinite", values] as const,
 };
 
 export const categoriesQuries = {
@@ -25,12 +29,31 @@ export const categoriesQuries = {
 
         if (values.name) searchParams.set("name", values.name);
 
-        const res = api.get("categories", {
+        const res = await api.get("categories", {
           searchParams,
         });
 
         return paginatedCategoriesResponseSchema.parse(await res.json());
       },
       placeholderData: (data) => data,
+    }),
+  infinite: (values: z.infer<typeof getAllCategoriesSearchSchema>) =>
+    infiniteQueryOptions({
+      queryKey: categoriesKeys.infinite(values),
+      queryFn: async ({ pageParam }) => {
+        const searchParams = new URLSearchParams();
+
+        if (values.name) searchParams.set("name", values.name);
+        if (pageParam) searchParams.set("cursor", pageParam.toString());
+
+        const res = await api.get("categories/all", {
+          searchParams,
+        });
+
+        return getAllCategoriesResponseSchema.parse(await res.json());
+      },
+      initialPageParam: 0,
+      getPreviousPageParam: (firstPage) => firstPage.data.cursor ?? undefined,
+      getNextPageParam: (lastPage) => lastPage.data.cursor ?? undefined,
     }),
 };

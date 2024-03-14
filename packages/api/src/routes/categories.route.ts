@@ -142,8 +142,24 @@ export const route = createProtectedOpenApiHono()
           id: categoriesTable.id,
           name: categoriesTable.name,
           createdAt: categoriesTable.createdAt,
+          subCategories: sql`
+          case
+            when count(${subCategoriesTable.id}) = 0 then json('[]')
+            else json_group_array(
+                    json_object('id', ${subCategoriesTable.id}, 'name', ${subCategoriesTable.name})
+                  )
+          end`
+            .mapWith(String)
+            .as("sub_categories"),
         })
         .from(categoriesTable)
+        .innerJoin(
+          subCategoriesTable,
+          and(
+            eq(subCategoriesTable.categoryId, categoriesTable.id),
+            isNull(subCategoriesTable.deletedAt)
+          )
+        )
         .where(
           and(
             isNull(categoriesTable.deletedAt),
@@ -152,13 +168,17 @@ export const route = createProtectedOpenApiHono()
           )
         )
         .orderBy(desc(categoriesTable.createdAt))
+        .groupBy(categoriesTable.id)
         .limit(20);
 
       return c.json(
         {
           ok: true,
           data: {
-            categories,
+            categories: categories.map((c) => ({
+              ...c,
+              subCategories: JSON.parse(c.subCategories),
+            })),
             cursor: categories.at(-1)?.createdAt.getTime(),
           },
         },

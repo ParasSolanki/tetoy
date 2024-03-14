@@ -11,8 +11,8 @@ const searchSchema = paginatedCategoriesSearchSchema.extend({
 export const Route = createFileRoute("/_auth/categories")({
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => ({ search }),
-  loader: async ({ context: { queryClient }, deps: { search } }) => {
-    return await queryClient.ensureQueryData(
+  loader: ({ context: { queryClient }, deps: { search } }) => {
+    queryClient.ensureQueryData(
       categoriesQuries.list({
         name: search.name,
         page: search.page,

@@ -55,6 +55,12 @@ export const getAllCategoriesResponseSchema = successSchema.extend({
         id: z.string(),
         name: z.string(),
         createdAt: z.string(),
+        subCategories: z
+          .object({
+            id: z.string(),
+            name: z.string(),
+          })
+          .array(),
       })
       .array(),
     cursor: z.number().optional(),
