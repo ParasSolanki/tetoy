@@ -11,7 +11,7 @@ import { z } from "zod";
 export const categoriesSearchSchema = z.object({
   name: paginatedCategoriesSearchSchema.shape.name,
   page: paginatedCategoriesSearchSchema.shape.page.catch(1),
-  perPage: paginatedCategoriesSearchSchema.shape.perPage,
+  perPage: paginatedCategoriesSearchSchema.shape.perPage.catch(20),
 });
 
 export const categoriesKeys = {

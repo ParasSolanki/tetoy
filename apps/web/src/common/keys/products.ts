@@ -6,14 +6,20 @@ import {
 import { api } from "~/utils/api-client";
 import { z } from "zod";
 
+export const productsSearchSchema = z.object({
+  name: paginatedProductsSearchSchema.shape.name,
+  page: paginatedProductsSearchSchema.shape.page.catch(1),
+  perPage: paginatedProductsSearchSchema.shape.perPage.catch(20),
+});
+
 export const productsKeys = {
   all: ["products"] as const,
-  list: (values: z.infer<typeof paginatedProductsSearchSchema>) =>
+  list: (values: z.infer<typeof productsSearchSchema>) =>
     [...productsKeys.all, "list", values] as const,
 };
 
 export const productsQuries = {
-  list: (values: z.infer<typeof paginatedProductsSearchSchema>) =>
+  list: (values: z.infer<typeof productsSearchSchema>) =>
     queryOptions({
       staleTime: 60 * 1000,
       queryKey: productsKeys.list(values),

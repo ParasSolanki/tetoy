@@ -109,6 +109,7 @@ export function CategoriesTable() {
   });
 
   const { data } = useQuery(categoriesQuries.list(searchParams));
+  const pageCount = data?.data.pagination.total ?? 0;
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -120,18 +121,13 @@ export function CategoriesTable() {
     [searchParams.name],
   );
 
-  console.log({ searchParams });
-
   const pagination = React.useMemo(
     () => ({
-      pageIndex:
-        data && data.data.pagination.total > 0 ? searchParams.page - 1 : -1,
+      pageIndex: pageCount > 0 ? searchParams.page - 1 : -1,
       pageSize: searchParams.perPage,
     }),
-    [searchParams.page, searchParams.perPage, data],
+    [searchParams.page, searchParams.perPage, pageCount],
   );
-
-  console.log({ pagination }, data && data.data.pagination.total > 0);
 
   function handleSetPagination(updaterOrValue?: unknown) {
     if (typeof updaterOrValue !== "function") return;
@@ -158,7 +154,7 @@ export function CategoriesTable() {
       columnVisibility,
       globalFilter,
     },
-    pageCount: data?.data.pagination.total ?? 0,
+    pageCount,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,

@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { paginatedProductsSearchSchema } from "@tetoy/api/schema";
-import { productsQuries } from "~/common/keys/products";
+import { productsQuries, productsSearchSchema } from "~/common/keys/products";
 import { seo } from "~/utils/seo";
 import { z } from "zod";
 
-const searchSchema = paginatedProductsSearchSchema.extend({
+const searchSchema = productsSearchSchema.extend({
   product: z.string().optional(),
 });
 

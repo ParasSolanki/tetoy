@@ -3,8 +3,14 @@ import { successSchema } from "./schema.js";
 
 export const paginatedCategoriesSearchSchema = z.object({
   name: z.string().optional(),
-  page: z.coerce.number(z.string()).min(1).default(1),
-  perPage: z.coerce.number(z.string()).default(20),
+  page: z.coerce
+    .number(z.string())
+    .min(1, "page must be greater than or equal to 1")
+    .default(1),
+  perPage: z.coerce
+    .number(z.string())
+    .min(1, "perPage must be greater than or equal to 1")
+    .default(20),
 });
 
 export const paginatedCategoriesResponseSchema = successSchema.extend({

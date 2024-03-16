@@ -118,7 +118,7 @@ export const route = createProtectedOpenApiHono()
             pagination: {
               page,
               perPage,
-              total: total[0].total,
+              total: Math.ceil(total[0].total / perPage),
             },
           },
         },

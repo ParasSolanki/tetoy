@@ -104,10 +104,15 @@ export function ProductsTable() {
   const searchParams = ProductsRoute.useSearch({
     select: (search) => search,
   });
+
+  const { data } = useQuery(productsQuries.list(searchParams));
+  const pageCount = data?.data.pagination.total ?? 0;
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
+
   const globalFilter = React.useMemo(
     () => searchParams.name ?? "",
     [searchParams.name],
@@ -115,13 +120,11 @@ export function ProductsTable() {
 
   const pagination = React.useMemo(
     () => ({
-      pageIndex: searchParams.page,
+      pageIndex: pageCount > 0 ? searchParams.page - 1 : -1,
       pageSize: searchParams.perPage,
     }),
-    [searchParams.page, searchParams.perPage],
+    [searchParams.page, searchParams.perPage, pageCount],
   );
-
-  const { data } = useQuery(productsQuries.list(searchParams));
 
   function handleSetPagination(updaterOrValue?: unknown) {
     if (typeof updaterOrValue !== "function") return;
@@ -131,7 +134,7 @@ export function ProductsTable() {
       to: "/products",
       search: {
         name: globalFilter,
-        page: newPagination.pageIndex,
+        page: newPagination.pageIndex + 1,
         perPage: newPagination.pageSize,
       },
       replace: true,
@@ -147,7 +150,7 @@ export function ProductsTable() {
       columnVisibility,
       globalFilter,
     },
-    rowCount: data?.data.pagination.total ?? 0,
+    pageCount,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
@@ -228,7 +231,10 @@ export function ProductsTableToolbar<TData>({
       to: "/products",
       search: {
         name: value,
-        page: table.getState().pagination.pageIndex,
+        page:
+          table.getPageCount() > 0
+            ? table.getState().pagination.pageIndex + 1
+            : 1,
         perPage: table.getState().pagination.pageSize,
       },
     });
@@ -333,7 +339,10 @@ export function ProductsTableActions({
       to: "/products",
       search: {
         name: table.getState().globalFilter,
-        page: table.getState().pagination.pageIndex,
+        page:
+          table.getPageCount() > 0
+            ? table.getState().pagination.pageIndex + 1
+            : 1,
         perPage: table.getState().pagination.pageSize,
         ...(open ? { product: product.id } : {}),
       },
