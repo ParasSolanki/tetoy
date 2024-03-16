@@ -1,0 +1,1 @@
+ALTER TABLE storage_blocks ADD `deleted_at` integer;

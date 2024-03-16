@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { text, sqliteTable, integer, unique } from "drizzle-orm/sqlite-core";
+import {
+  text,
+  sqliteTable,
+  integer,
+  unique,
+  real,
+} from "drizzle-orm/sqlite-core";
 import { createId } from "@paralleldrive/cuid2";
 
 export const usersTable = sqliteTable("users", {
@@ -79,6 +85,18 @@ export const userKeysTable = sqliteTable(
     uniqueUserIdAndProviderId: unique().on(t.userId, t.providerId),
   })
 );
+
+export const countriesTable = sqliteTable("countries", {
+  id: text("id")
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text("name"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s', 'now'))`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }),
+});
 
 export const categoriesTable = sqliteTable("categories", {
   id: text("id")
@@ -168,3 +186,85 @@ export const storagesTable = sqliteTable("storages", {
   ),
   deletedAt: integer("deleted_at", { mode: "timestamp" }),
 });
+
+export const storageActivityLogsTable = sqliteTable("storage_activity_logs", {
+  id: text("id")
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  action: text("action"),
+  message: text("message"),
+  storageId: text("storage_id")
+    .notNull()
+    .references(() => storagesTable.id),
+  userId: text("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  timestamp: integer("timestamp", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s', 'now'))`),
+});
+
+export const storageBlocksTable = sqliteTable("storage_blocks", {
+  id: text("id")
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text("name").notNull(),
+  storageId: text("storage_id")
+    .notNull()
+    .references(() => storagesTable.id, { onDelete: "cascade" }),
+  row: integer("row"),
+  column: integer("column"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s', 'now'))`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }),
+  deletedAt: integer("deleted_at", { mode: "timestamp" }),
+});
+
+export const storageBoxesTable = sqliteTable("storage_boxes", {
+  id: text("id")
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  storageId: text("storage_id")
+    .notNull()
+    .references(() => storagesTable.id, { onDelete: "cascade" }),
+  productId: text("product_id")
+    .notNull()
+    .references(() => productsTable.id),
+  userId: text("user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  grade: text("grade").notNull(),
+  price: real("price").notNull(),
+  weight: real("weight").notNull(),
+  subGrade: text("sub_grade"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s', 'now'))`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }),
+  deletedAt: integer("deleted_at", { mode: "timestamp" }),
+  checkedOutAt: integer("checked_out_at", { mode: "timestamp" }),
+});
+
+export const storageBoxesCountriesTable = sqliteTable(
+  "storage_boxes_countries",
+  {
+    id: text("id")
+      .notNull()
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    boxId: text("box_id")
+      .notNull()
+      .references(() => storageBoxesTable.id, { onDelete: "cascade" }),
+    countriesTable: text("country_id")
+      .notNull()
+      .references(() => countriesTable.id),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(strftime('%s', 'now'))`),
+    updatedAt: integer("updated_at", { mode: "timestamp" }),
+  }
+);
