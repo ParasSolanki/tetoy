@@ -398,7 +398,13 @@ export function CategoriesTableActions({
             category={category}
             schema={updateCategorySchema}
             isPending={isPending}
-            onSubmit={(values) => mutate(values)}
+            onSubmit={(values) =>
+              mutate(values, {
+                onSuccess: () => {
+                  handleOpenEditCategorySheet(false);
+                },
+              })
+            }
           />
         </DropdownMenuSheetItem>
 
