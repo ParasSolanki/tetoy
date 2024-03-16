@@ -107,6 +107,9 @@ export function CategoriesTable() {
   const searchParams = CategoriesRoute.useSearch({
     select: (search) => search,
   });
+
+  const { data } = useQuery(categoriesQuries.list(searchParams));
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const [columnVisibility, setColumnVisibility] =
@@ -117,25 +120,29 @@ export function CategoriesTable() {
     [searchParams.name],
   );
 
+  console.log({ searchParams });
+
   const pagination = React.useMemo(
     () => ({
-      pageIndex: searchParams.page,
+      pageIndex:
+        data && data.data.pagination.total > 0 ? searchParams.page - 1 : -1,
       pageSize: searchParams.perPage,
     }),
-    [searchParams.page, searchParams.perPage],
+    [searchParams.page, searchParams.perPage, data],
   );
 
-  const { data } = useQuery(categoriesQuries.list(searchParams));
+  console.log({ pagination }, data && data.data.pagination.total > 0);
 
   function handleSetPagination(updaterOrValue?: unknown) {
     if (typeof updaterOrValue !== "function") return;
 
     const newPagination = updaterOrValue(pagination);
+
     navigate({
       to: "/categories",
       search: {
         name: globalFilter,
-        page: newPagination.pageIndex,
+        page: newPagination.pageIndex + 1,
         perPage: newPagination.pageSize,
       },
       replace: true,
@@ -151,10 +158,7 @@ export function CategoriesTable() {
       columnVisibility,
       globalFilter,
     },
-    pageCount:
-      data?.data.pagination.total && data.data.pagination.perPage
-        ? Math.ceil(data.data.pagination.total / data.data.pagination.perPage)
-        : 0,
+    pageCount: data?.data.pagination.total ?? 0,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
@@ -235,7 +239,10 @@ export function CategoriesTableToolbar<TData>({
       to: "/categories",
       search: {
         name: value,
-        page: table.getState().pagination.pageIndex,
+        page:
+          table.getPageCount() > 0
+            ? table.getState().pagination.pageIndex + 1
+            : 1,
         perPage: table.getState().pagination.pageSize,
       },
     });
@@ -340,7 +347,10 @@ export function CategoriesTableActions({
       to: "/categories",
       search: {
         name: table.getState().globalFilter,
-        page: table.getState().pagination.pageIndex,
+        page:
+          table.getPageCount() > 0
+            ? table.getState().pagination.pageIndex + 1
+            : 1,
         perPage: table.getState().pagination.pageSize,
         ...(open ? { category: category.id } : {}),
       },

@@ -8,16 +8,22 @@ import {
 import { api } from "~/utils/api-client";
 import { z } from "zod";
 
+export const categoriesSearchSchema = z.object({
+  name: paginatedCategoriesSearchSchema.shape.name,
+  page: paginatedCategoriesSearchSchema.shape.page.catch(1),
+  perPage: paginatedCategoriesSearchSchema.shape.perPage,
+});
+
 export const categoriesKeys = {
   all: ["categories"] as const,
-  list: (values: z.infer<typeof paginatedCategoriesSearchSchema>) =>
+  list: (values: z.infer<typeof categoriesSearchSchema>) =>
     [...categoriesKeys.all, "list", values] as const,
   infinite: (values: z.infer<typeof getAllCategoriesSearchSchema>) =>
     [...categoriesKeys.all, "infinite", values] as const,
 };
 
 export const categoriesQuries = {
-  list: (values: z.infer<typeof paginatedCategoriesSearchSchema>) =>
+  list: (values: z.infer<typeof categoriesSearchSchema>) =>
     queryOptions({
       staleTime: 60 * 1000,
       queryKey: categoriesKeys.list(values),

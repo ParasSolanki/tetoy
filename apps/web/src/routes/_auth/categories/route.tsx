@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { paginatedCategoriesSearchSchema } from "@tetoy/api/schema";
-import { categoriesQuries } from "~/common/keys/categories";
+import {
+  categoriesQuries,
+  categoriesSearchSchema,
+} from "~/common/keys/categories";
 import { seo } from "~/utils/seo";
 import { z } from "zod";
 
-const searchSchema = paginatedCategoriesSearchSchema.extend({
+const searchSchema = categoriesSearchSchema.extend({
   category: z.string().optional(),
 });
 

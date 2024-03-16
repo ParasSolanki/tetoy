@@ -115,9 +115,9 @@ export const route = createProtectedOpenApiHono()
               subCategories: JSON.parse(c.subCategories),
             })),
             pagination: {
-              total: totalResults.value[0].total,
               page,
               perPage,
+              total: Math.ceil(totalResults.value[0].total / perPage),
             },
           },
         },

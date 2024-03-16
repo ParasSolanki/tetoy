@@ -3,7 +3,7 @@ import { successSchema } from "./schema.js";
 
 export const paginatedCategoriesSearchSchema = z.object({
   name: z.string().optional(),
-  page: z.coerce.number(z.string()).default(1),
+  page: z.coerce.number(z.string()).min(1).default(1),
   perPage: z.coerce.number(z.string()).default(20),
 });
 
