@@ -8,7 +8,6 @@ import {
 } from "@tanstack/react-table";
 import type {
   ColumnDef,
-  PaginationState,
   Row,
   SortingState,
   Table,
@@ -22,10 +21,8 @@ import {
 } from "@tetoy/api/schema";
 import { categoriesKeys, categoriesQuries } from "~/common/keys/categories";
 import {
-  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
@@ -34,14 +31,13 @@ import {
 import { DataTableViewOptions } from "~/components/ui/data-table/data-table-view-options";
 import {
   DropdownMenu,
+  DropdownMenuAlertDialogItem,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuSheetItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
 import {
-  Sheet,
-  SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
@@ -112,22 +108,39 @@ export function CategoriesTable() {
     select: (search) => search,
   });
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState(
-    searchParams.name ?? "",
-  );
+
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
-  const [{ pageIndex, pageSize }, setPagination] =
-    React.useState<PaginationState>({
+
+  const globalFilter = React.useMemo(
+    () => searchParams.name ?? "",
+    [searchParams.name],
+  );
+
+  const pagination = React.useMemo(
+    () => ({
       pageIndex: searchParams.page,
       pageSize: searchParams.perPage,
-    });
-  const pagination = React.useMemo(
-    () => ({ pageIndex, pageSize }),
-    [pageIndex, pageSize],
+    }),
+    [searchParams.page, searchParams.perPage],
   );
 
   const { data } = useQuery(categoriesQuries.list(searchParams));
+
+  function handleSetPagination(updaterOrValue?: unknown) {
+    if (typeof updaterOrValue !== "function") return;
+
+    const newPagination = updaterOrValue(pagination);
+    navigate({
+      to: "/categories",
+      search: {
+        name: globalFilter,
+        page: newPagination.pageIndex,
+        perPage: newPagination.pageSize,
+      },
+      replace: true,
+    });
+  }
 
   const table = useReactTable({
     data: data?.data.categories ?? [],
@@ -138,28 +151,17 @@ export function CategoriesTable() {
       columnVisibility,
       globalFilter,
     },
-    rowCount: data?.data.pagination.total ?? 0,
+    pageCount:
+      data?.data.pagination.total && data.data.pagination.perPage
+        ? Math.ceil(data.data.pagination.total / data.data.pagination.perPage)
+        : 0,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
-    onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: handleSetPagination,
     manualPagination: true,
   });
-
-  React.useEffect(() => {
-    navigate({
-      to: "/categories",
-      search: {
-        name: searchParams.name,
-        page: searchParams.page,
-        perPage: searchParams.perPage,
-        category: searchParams.category,
-      },
-      replace: true,
-    });
-  }, [navigate, searchParams]);
 
   return (
     <div className="mt-10 space-y-4">
@@ -265,83 +267,20 @@ export function CategoriesTableActions({
 }: CategoriesTableActionsProps) {
   const category = row.original;
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const searchCategory = CategoriesRoute.useSearch({
     select: (search) => search.category,
   });
-  const [isEditSheetOpen, setIsEditSheetOpen] = React.useState(
-    () => searchCategory === category.id,
+  const [open, setOpen] = React.useState(() => category.id === searchCategory);
+  const [hasOpenItem, setHasOpenItem] = React.useState(
+    () => category.id === searchCategory,
   );
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-
-  function handleOpenEditCategorySheet(open: boolean) {
-    setIsEditSheetOpen(open);
-
-    navigate({
-      to: "/categories",
-      search: {
-        name: table.getState().globalFilter,
-        page: table.getState().pagination.pageIndex,
-        perPage: table.getState().pagination.pageSize,
-        ...(open ? { category: category.id } : {}),
-      },
-      replace: true,
-    });
-  }
-
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
-          >
-            <MoreHorizontalIcon className="size-4" />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[160px]">
-          <DropdownMenuItem
-            className="focus:cursor-pointer"
-            onSelect={() => handleOpenEditCategorySheet(true)}
-          >
-            <PencilIcon className="mr-2 size-4" /> Edit
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            className="text-red-500 focus:cursor-pointer focus:bg-destructive focus:text-white"
-            onSelect={() => setIsDeleteDialogOpen(true)}
-          >
-            <Trash2Icon className="mr-2 size-4" /> Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <EditCategorySheet
-        open={isEditSheetOpen}
-        category={category}
-        onOpenChange={handleOpenEditCategorySheet}
-      />
-      <DeleteCategoryAlertDialog
-        open={isDeleteDialogOpen}
-        categoryId={category.id}
-        onOpenChange={setIsDeleteDialogOpen}
-      />
-    </>
+  const [editOpen, setEditOpen] = React.useState(
+    () => category.id === searchCategory,
   );
-}
+  const dropdownMenuTriggerRef = React.useRef<HTMLButtonElement>(null);
+  const focusRef = React.useRef<HTMLButtonElement | null>(null);
 
-interface EditCategorySheetProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  category: Category;
-}
-
-function EditCategorySheet({
-  category,
-  open,
-  onOpenChange,
-}: EditCategorySheetProps) {
-  const queryClient = useQueryClient();
   const { isPending, mutate } = useMutation({
     mutationKey: ["categories", "edit", category.id],
     mutationFn: async (values: unknown) => {
@@ -363,48 +302,10 @@ function EditCategorySheet({
     },
   });
 
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Edit Category</SheetTitle>
-          <SheetDescription>
-            Edit category details here. Click save when you are done.
-          </SheetDescription>
-        </SheetHeader>
-        <CategoryForm
-          category={category}
-          schema={updateCategorySchema}
-          isPending={isPending}
-          onSubmit={(values) => {
-            mutate(values, {
-              onSuccess: () => {
-                onOpenChange(false);
-              },
-            });
-          }}
-        />
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-interface DeleteCategoryAlertDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  categoryId: string;
-}
-
-function DeleteCategoryAlertDialog({
-  open,
-  onOpenChange,
-  categoryId,
-}: DeleteCategoryAlertDialogProps) {
-  const queryClient = useQueryClient();
-  const { mutate } = useMutation({
-    mutationKey: ["categories", "delete", categoryId],
+  const { mutate: mutateDeleteCategory } = useMutation({
+    mutationKey: ["categories", "delete", category.id],
     mutationFn: async () => {
-      const res = await api.delete(`categories/${categoryId}`);
+      const res = await api.delete(`categories/${category.id}`);
 
       return deleteCatgoryResponseSchema.parse(await res.json());
     },
@@ -422,24 +323,108 @@ function DeleteCategoryAlertDialog({
     },
   });
 
+  function handleItemSelect() {
+    focusRef.current = dropdownMenuTriggerRef.current;
+  }
+
+  function handleItemOpenChange(open: boolean) {
+    setHasOpenItem(open);
+
+    if (open === false) setOpen(false);
+  }
+
+  function handleOpenEditCategorySheet(open: boolean) {
+    handleItemOpenChange(open);
+    setEditOpen(open);
+    navigate({
+      to: "/categories",
+      search: {
+        name: table.getState().globalFilter,
+        page: table.getState().pagination.pageIndex,
+        perPage: table.getState().pagination.pageSize,
+        ...(open ? { category: category.id } : {}),
+      },
+      replace: true,
+    });
+  }
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will delete category.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction asChild>
-            <Button variant="destructive" onClick={() => mutate()}>
-              Continue
-            </Button>
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          ref={dropdownMenuTriggerRef}
+          variant="ghost"
+          className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+        >
+          <MoreHorizontalIcon className="size-4" />
+          <span className="sr-only">Open menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-[160px]"
+        hidden={hasOpenItem}
+        onCloseAutoFocus={(event) => {
+          if (focusRef.current) {
+            focusRef.current?.focus();
+            focusRef.current = null;
+            event.preventDefault();
+          }
+        }}
+      >
+        <DropdownMenuSheetItem
+          open={editOpen}
+          triggerChildern={
+            <>
+              <PencilIcon className="mr-2 size-4" /> Edit
+            </>
+          }
+          onSelect={handleItemSelect}
+          onOpenChange={handleOpenEditCategorySheet}
+        >
+          <SheetHeader>
+            <SheetTitle>Edit Category</SheetTitle>
+            <SheetDescription>
+              Edit category details here. Click save when you are done.
+            </SheetDescription>
+          </SheetHeader>
+          <CategoryForm
+            category={category}
+            schema={updateCategorySchema}
+            isPending={isPending}
+            onSubmit={(values) => mutate(values)}
+          />
+        </DropdownMenuSheetItem>
+
+        <DropdownMenuAlertDialogItem
+          triggerChildern={
+            <>
+              <Trash2Icon className="mr-2 size-4" /> Delete
+            </>
+          }
+          onSelect={handleItemSelect}
+          onOpenChange={handleItemOpenChange}
+          className="text-red-500 focus:cursor-pointer focus:bg-destructive focus:text-white"
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will delete category.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={() => mutateDeleteCategory()}
+              >
+                Continue
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </DropdownMenuAlertDialogItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
