@@ -13,6 +13,7 @@ import {
   isNull,
   like,
   lt,
+  not,
   sql,
 } from "@tetoy/db/drizzle";
 import {
@@ -372,7 +373,8 @@ export const route = createProtectedOpenApiHono()
           .where(
             and(
               isNull(productsTable.deletedAt),
-              eq(productsTable.name, body.name)
+              eq(productsTable.name, body.name),
+              not(eq(productsTable.id, param.id))
             )
           )
           .limit(1),
