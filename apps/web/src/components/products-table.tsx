@@ -8,7 +8,6 @@ import {
 } from "@tanstack/react-table";
 import type {
   ColumnDef,
-  PaginationState,
   Row,
   SortingState,
   Table,
@@ -21,10 +20,8 @@ import {
 } from "@tetoy/api/schema";
 import { productsKeys, productsQuries } from "~/common/keys/products";
 import {
-  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
@@ -32,16 +29,15 @@ import {
 } from "~/components/ui/alert-dialog";
 import { DataTableViewOptions } from "~/components/ui/data-table/data-table-view-options";
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
 import {
   DropdownMenu,
+  DropdownMenuAlertDialogItem,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuDialogItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
@@ -109,22 +105,38 @@ export function ProductsTable() {
     select: (search) => search,
   });
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState(
-    searchParams.name ?? "",
-  );
+
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
-  const [{ pageIndex, pageSize }, setPagination] =
-    React.useState<PaginationState>({
+  const globalFilter = React.useMemo(
+    () => searchParams.name ?? "",
+    [searchParams.name],
+  );
+
+  const pagination = React.useMemo(
+    () => ({
       pageIndex: searchParams.page,
       pageSize: searchParams.perPage,
-    });
-  const pagination = React.useMemo(
-    () => ({ pageIndex, pageSize }),
-    [pageIndex, pageSize],
+    }),
+    [searchParams.page, searchParams.perPage],
   );
 
   const { data } = useQuery(productsQuries.list(searchParams));
+
+  function handleSetPagination(updaterOrValue?: unknown) {
+    if (typeof updaterOrValue !== "function") return;
+
+    const newPagination = updaterOrValue(pagination);
+    navigate({
+      to: "/products",
+      search: {
+        name: globalFilter,
+        page: newPagination.pageIndex,
+        perPage: newPagination.pageSize,
+      },
+      replace: true,
+    });
+  }
 
   const table = useReactTable({
     data: data?.data.products ?? [],
@@ -140,23 +152,9 @@ export function ProductsTable() {
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
-    onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: handleSetPagination,
     manualPagination: true,
   });
-
-  React.useEffect(() => {
-    navigate({
-      to: "/products",
-      search: {
-        name: searchParams.name,
-        page: searchParams.page,
-        perPage: searchParams.perPage,
-        product: searchParams.product,
-      },
-      replace: true,
-    });
-  }, [navigate, searchParams]);
 
   return (
     <div className="mt-10 space-y-4">
@@ -262,83 +260,20 @@ export function ProductsTableActions({
 }: ProductsTableActionsProps) {
   const product = row.original;
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const searchProduct = ProductsRoute.useSearch({
     select: (search) => search.product,
   });
-  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(
-    () => searchProduct === product.id,
+  const [open, setOpen] = React.useState(() => product.id === searchProduct);
+  const [hasOpenItem, setHasOpenItem] = React.useState(
+    () => product.id === searchProduct,
   );
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-
-  function handleOpenEditProductDialog(open: boolean) {
-    setIsEditDialogOpen(open);
-
-    navigate({
-      to: "/products",
-      search: {
-        name: table.getState().globalFilter,
-        page: table.getState().pagination.pageIndex,
-        perPage: table.getState().pagination.pageSize,
-        ...(open ? { product: product.id } : {}),
-      },
-      replace: true,
-    });
-  }
-
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
-          >
-            <MoreHorizontalIcon className="size-4" />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[160px]">
-          <DropdownMenuItem
-            className="focus:cursor-pointer"
-            onSelect={() => handleOpenEditProductDialog(true)}
-          >
-            <PencilIcon className="mr-2 size-4" /> Edit
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            className="text-red-500 focus:cursor-pointer focus:bg-destructive focus:text-white"
-            onSelect={() => setIsDeleteDialogOpen(true)}
-          >
-            <Trash2Icon className="mr-2 size-4" /> Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <EditProductDialog
-        open={isEditDialogOpen}
-        product={product}
-        onOpenChange={handleOpenEditProductDialog}
-      />
-      <DeleteProductAlertDialog
-        open={isDeleteDialogOpen}
-        productId={product.id}
-        onOpenChange={setIsDeleteDialogOpen}
-      />
-    </>
+  const [editOpen, setEditOpen] = React.useState(
+    () => product.id === searchProduct,
   );
-}
+  const dropdownMenuTriggerRef = React.useRef<HTMLButtonElement>(null);
+  const focusRef = React.useRef<HTMLButtonElement | null>(null);
 
-interface EditProductDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  product: Product;
-}
-
-function EditProductDialog({
-  product,
-  open,
-  onOpenChange,
-}: EditProductDialogProps) {
-  const queryClient = useQueryClient();
   const { isPending, mutate } = useMutation({
     mutationKey: ["products", "edit", product.id],
     mutationFn: async (values: unknown) => {
@@ -360,47 +295,10 @@ function EditProductDialog({
     },
   });
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit Product</DialogTitle>
-          <DialogDescription>
-            Edit product details here. Click save when you are done.
-          </DialogDescription>
-        </DialogHeader>
-        <ProductForm
-          product={product}
-          isPending={isPending}
-          onSubmit={(values) => {
-            mutate(values, {
-              onSuccess: () => {
-                onOpenChange(false);
-              },
-            });
-          }}
-        />
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-interface DeleteProductAlertDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  productId: string;
-}
-
-function DeleteProductAlertDialog({
-  open,
-  onOpenChange,
-  productId,
-}: DeleteProductAlertDialogProps) {
-  const queryClient = useQueryClient();
-  const { mutate } = useMutation({
-    mutationKey: ["products", "delete", productId],
+  const { mutate: mutateDeleteProduct } = useMutation({
+    mutationKey: ["products", "delete", product.id],
     mutationFn: async () => {
-      const res = await api.delete(`products/${productId}`);
+      const res = await api.delete(`products/${product.id}`);
 
       return deleteProductResponseSchema.parse(await res.json());
     },
@@ -418,24 +316,113 @@ function DeleteProductAlertDialog({
     },
   });
 
+  function handleItemSelect() {
+    focusRef.current = dropdownMenuTriggerRef.current;
+  }
+
+  function handleItemOpenChange(open: boolean) {
+    setHasOpenItem(open);
+
+    if (open === false) setOpen(false);
+  }
+
+  function handleOpenEditProductDialog(open: boolean) {
+    handleItemOpenChange(open);
+    setEditOpen(open);
+    navigate({
+      to: "/products",
+      search: {
+        name: table.getState().globalFilter,
+        page: table.getState().pagination.pageIndex,
+        perPage: table.getState().pagination.pageSize,
+        ...(open ? { product: product.id } : {}),
+      },
+      replace: true,
+    });
+  }
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will delete product.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction asChild>
-            <Button variant="destructive" onClick={() => mutate()}>
-              Continue
-            </Button>
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          ref={dropdownMenuTriggerRef}
+          variant="ghost"
+          className="flex size-8 p-0 data-[state=open]:bg-muted"
+        >
+          <MoreHorizontalIcon className="size-4" />
+          <span className="sr-only">Open menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-[160px]"
+        hidden={hasOpenItem}
+        onCloseAutoFocus={(event) => {
+          if (focusRef.current) {
+            focusRef.current?.focus();
+            focusRef.current = null;
+            event.preventDefault();
+          }
+        }}
+      >
+        <DropdownMenuDialogItem
+          open={editOpen}
+          triggerChildern={
+            <>
+              <PencilIcon className="mr-2 size-4" /> Edit
+            </>
+          }
+          onSelect={handleItemSelect}
+          onOpenChange={handleOpenEditProductDialog}
+        >
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>
+              Edit product details here. Click save when you are done.
+            </DialogDescription>
+          </DialogHeader>
+          <ProductForm
+            product={product}
+            isPending={isPending}
+            onSubmit={(values) =>
+              mutate(values, {
+                onSuccess: () => {
+                  handleOpenEditProductDialog(false);
+                },
+              })
+            }
+          />
+        </DropdownMenuDialogItem>
+
+        <DropdownMenuAlertDialogItem
+          triggerChildern={
+            <>
+              <Trash2Icon className="mr-2 size-4" /> Delete
+            </>
+          }
+          onSelect={handleItemSelect}
+          onOpenChange={handleItemOpenChange}
+          className="text-red-500 focus:cursor-pointer focus:bg-destructive focus:text-white"
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will delete product.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={() => mutateDeleteProduct()}
+              >
+                Continue
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </DropdownMenuAlertDialogItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
