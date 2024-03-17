@@ -448,7 +448,7 @@ export const route = createProtectedOpenApiHono()
 
         await tx.insert(storageActivityLogsTable).values({
           action: "DELETE",
-          message: `Deleted storage '${storage.name}'`,
+          message: `Deleted storage '${storage.name}'.`,
           timestamp: date,
           userId: authUser.id,
           storageId: storage.id,
