@@ -1,6 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import {
   badRequestErrorSchema,
+  conflictErrorSchema,
   forbiddenErrorSchema,
   internalServerErrorSchema,
 } from "../common/schema.js";
@@ -9,6 +10,7 @@ import {
   paginatedStoragesResponseSchema,
   paginatedStoragesSearchSchema,
   createStorageResponseSchema,
+  getStorageResponseSchema,
 } from "../common/storages.schema.js";
 
 const storageIdSchema = z.string().openapi({
@@ -82,6 +84,59 @@ export const createStorageRoute = createRoute({
       content: {
         "application/json": {
           schema: createStorageResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: badRequestErrorSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: forbiddenErrorSchema,
+        },
+      },
+    },
+    409: {
+      description: "Conflict",
+      content: {
+        "application/json": {
+          schema: conflictErrorSchema,
+        },
+      },
+    },
+    500: {
+      description: "Something went wrong",
+      content: {
+        "application/json": {
+          schema: internalServerErrorSchema,
+        },
+      },
+    },
+  },
+});
+
+export const getStorageRoute = createRoute({
+  path: "/{id}",
+  method: "get",
+  tags: ["Storages"],
+  request: {
+    params: z.object({
+      id: storageIdSchema,
+    }),
+  },
+  responses: {
+    201: {
+      description: "Get storage",
+      content: {
+        "application/json": {
+          schema: getStorageResponseSchema,
         },
       },
     },

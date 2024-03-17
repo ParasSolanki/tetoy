@@ -1,7 +1,17 @@
-import { and, desc, eq, isNull, like, sql } from "@tetoy/db/drizzle";
+import {
+  aliasedRelation,
+  aliasedTable,
+  and,
+  desc,
+  eq,
+  isNull,
+  like,
+  sql,
+} from "@tetoy/db/drizzle";
 import {
   createStorageRoute,
   getPaginatedStoragesRoute,
+  getStorageRoute,
 } from "../openapi/storages.openapi.js";
 import { createProtectedOpenApiHono } from "../utils/openapi-hono.js";
 import {
@@ -14,7 +24,11 @@ import {
   subCategoriesTable,
   usersTable,
 } from "@tetoy/db";
-import { badRequestError, internalServerError } from "../utils/response.js";
+import {
+  badRequestError,
+  conflictError,
+  internalServerError,
+} from "../utils/response.js";
 import { getBlocksFromDimension } from "../utils/storage.js";
 import pMap from "p-map";
 
@@ -168,7 +182,7 @@ export const route = createProtectedOpenApiHono()
       }
 
       if (storage) {
-        return badRequestError(c, {
+        return conflictError(c, {
           message: "Storage with name already exists",
         });
       }
@@ -234,6 +248,120 @@ export const route = createProtectedOpenApiHono()
       );
     } catch (e) {
       console.log(e);
+      return internalServerError(c);
+    }
+  })
+  .openapi(getStorageRoute, async (c) => {
+    const param = c.req.valid("param");
+
+    try {
+      const storage = await db
+        .select({ id: storagesTable.id })
+        .from(storagesTable)
+        .where(
+          and(eq(storagesTable.id, param.id), isNull(storagesTable.deletedAt))
+        );
+
+      if (!storage) {
+        return badRequestError(c, { message: "Storage does not exists" });
+      }
+    } catch (e) {
+      return internalServerError(c);
+    }
+
+    try {
+      const createdUsers = aliasedTable(usersTable, "created_users");
+      const superVisorUsers = aliasedTable(usersTable, "supervisor_users");
+
+      const [storage] = await db
+        .select({
+          id: storagesTable.id,
+          name: storagesTable.name,
+          dimension: storagesTable.dimension,
+          capacity: storagesTable.capacity,
+          createdAt: storagesTable.createdAt,
+          createdBy: {
+            id: createdUsers.id,
+            displayName: createdUsers.displayName,
+            avatarUrl: createdUsers.avatarUrl,
+          },
+          superVisor: {
+            id: superVisorUsers.id,
+            displayName: superVisorUsers.displayName,
+            avatarUrl: superVisorUsers.avatarUrl,
+          },
+          product: {
+            id: productsTable.id,
+            name: productsTable.name,
+            category: sql`
+            case 
+                when count(${productsTable.categoryId}) = 0 then NULL
+                else json_object('id', ${categoriesTable.id}, 'name', ${categoriesTable.name})
+            end
+          `
+              .mapWith(String)
+              .as("category"),
+            subCategory: sql`
+            case 
+                when count(${productsTable.subCategoryId}) = 0 then NULL
+                else json_object('id', ${subCategoriesTable.id}, 'name', ${subCategoriesTable.name})
+            end
+          `
+              .mapWith(String)
+              .as("sub_category"),
+          },
+          blocks: sql`
+          case
+            when count(${storageBlocksTable.id}) = 0 then json('[]')
+            else json_group_array(
+                    json_object('id', ${storageBlocksTable.id}, 'name', ${storageBlocksTable.name}, 'row', ${storageBlocksTable.row}, 'column', ${storageBlocksTable.column})
+                  )
+          end`
+            .mapWith(String)
+            .as("blocks"),
+        })
+        .from(storagesTable)
+        .innerJoin(createdUsers, eq(createdUsers.id, storagesTable.createdById))
+        .innerJoin(productsTable, eq(productsTable.id, storagesTable.productId))
+        .innerJoin(
+          superVisorUsers,
+          eq(superVisorUsers.id, storagesTable.supervisorId)
+        )
+        .innerJoin(
+          categoriesTable,
+          eq(categoriesTable.id, productsTable.categoryId)
+        )
+        .innerJoin(
+          subCategoriesTable,
+          eq(subCategoriesTable.id, productsTable.subCategoryId)
+        )
+        .innerJoin(
+          storageBlocksTable,
+          eq(storageBlocksTable.storageId, storagesTable.id)
+        )
+        .where(
+          and(isNull(storagesTable.deletedAt), eq(storagesTable.id, param.id))
+        )
+        .groupBy(storagesTable.id);
+
+      return c.json(
+        {
+          ok: true,
+          data: {
+            storage: {
+              ...storage,
+              product: {
+                ...storage.product,
+                category: JSON.parse(storage.product.category),
+                subCategory: JSON.parse(storage.product.subCategory),
+              },
+              blocks: JSON.parse(storage.blocks),
+            },
+          },
+        },
+        200
+      );
+    } catch (e) {
       return internalServerError(c);
     }
   });

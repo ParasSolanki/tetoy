@@ -130,3 +130,55 @@ export const createStorageResponseSchema = successSchema.extend({
     }),
   }),
 });
+
+export const getStorageResponseSchema = successSchema.extend({
+  data: z.object({
+    storage: z.object({
+      id: z.string(),
+      name: z.string(),
+      dimension: z.string(),
+      capacity: z.string(),
+      createdAt: z.string(),
+      superVisor: z
+        .object({
+          id: z.string(),
+          displayName: z.string().nullable(),
+          avatarUrl: z.string().nullable(),
+        })
+        .nullable(),
+      createdById: z
+        .object({
+          id: z.string(),
+          displayName: z.string().nullable(),
+          avatarUrl: z.string().nullable(),
+        })
+        .nullable(),
+      product: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          category: z
+            .object({
+              id: z.string(),
+              name: z.string(),
+            })
+            .nullable(),
+          subCategory: z
+            .object({
+              id: z.string(),
+              name: z.string(),
+            })
+            .nullable(),
+        })
+        .nullable(),
+      blocks: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          row: z.number(),
+          column: z.number(),
+        })
+        .array(),
+    }),
+  }),
+});
