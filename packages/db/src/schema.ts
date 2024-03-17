@@ -237,6 +237,8 @@ export const storageBoxesTable = sqliteTable("storage_boxes", {
   userId: text("user_id")
     .notNull()
     .references(() => usersTable.id),
+  totalBoxes: integer("total_boxes").notNull(),
+  checkedOutBoxes: integer("checked_out_boxes").notNull().default(0),
   grade: text("grade").notNull(),
   price: real("price").notNull(),
   weight: real("weight").notNull(),
