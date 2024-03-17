@@ -146,7 +146,7 @@ export const getStorageResponseSchema = successSchema.extend({
           avatarUrl: z.string().nullable(),
         })
         .nullable(),
-      createdById: z
+      createdBy: z
         .object({
           id: z.string(),
           displayName: z.string().nullable(),
