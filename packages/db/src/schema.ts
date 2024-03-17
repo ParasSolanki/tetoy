@@ -192,8 +192,8 @@ export const storageActivityLogsTable = sqliteTable("storage_activity_logs", {
     .notNull()
     .primaryKey()
     .$defaultFn(() => createId()),
-  action: text("action"),
-  message: text("message"),
+  action: text("action").notNull(),
+  message: text("message").notNull(),
   storageId: text("storage_id")
     .notNull()
     .references(() => storagesTable.id),
@@ -214,8 +214,8 @@ export const storageBlocksTable = sqliteTable("storage_blocks", {
   storageId: text("storage_id")
     .notNull()
     .references(() => storagesTable.id, { onDelete: "cascade" }),
-  row: integer("row"),
-  column: integer("column"),
+  row: integer("row").notNull(),
+  column: integer("column").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(strftime('%s', 'now'))`),
@@ -228,9 +228,9 @@ export const storageBoxesTable = sqliteTable("storage_boxes", {
     .notNull()
     .primaryKey()
     .$defaultFn(() => createId()),
-  storageId: text("storage_id")
+  blockId: text("block_id")
     .notNull()
-    .references(() => storagesTable.id, { onDelete: "cascade" }),
+    .references(() => storageBlocksTable.id, { onDelete: "cascade" }),
   productId: text("product_id")
     .notNull()
     .references(() => productsTable.id),
@@ -261,7 +261,7 @@ export const storageBoxesCountriesTable = sqliteTable(
     boxId: text("box_id")
       .notNull()
       .references(() => storageBoxesTable.id, { onDelete: "cascade" }),
-    countriesTable: text("country_id")
+    countryId: text("country_id")
       .notNull()
       .references(() => countriesTable.id),
     createdAt: integer("created_at", { mode: "timestamp" })

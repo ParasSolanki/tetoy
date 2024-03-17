@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "sqlite",
-  "id": "f1f0e693-67e7-44cb-8855-259041dc542c",
-  "prevId": "7f3692c8-91e9-4b9d-babd-8b8df9fb5cb2",
+  "id": "9ef54f10-13fb-4654-bf3d-c8b84f78d1bb",
+  "prevId": "91cb5973-6b28-4c65-bef8-4331eb4c7b02",
   "tables": {
     "categories": {
       "name": "categories",
@@ -270,14 +270,14 @@
           "name": "action",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "message": {
           "name": "message",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "storage_id": {
@@ -363,14 +363,14 @@
           "name": "row",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "column": {
           "name": "column",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "created_at": {
@@ -383,6 +383,13 @@
         },
         "updated_at": {
           "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,

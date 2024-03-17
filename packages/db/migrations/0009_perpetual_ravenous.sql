@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS `storage_boxes_countries`;
+--> statement-breakpoint
 CREATE TABLE `storage_boxes_countries` (
 	`id` text PRIMARY KEY NOT NULL,
 	`box_id` text NOT NULL,

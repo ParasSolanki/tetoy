@@ -6,6 +6,7 @@ import {
   categoryRoutes,
   meRoutes,
   productRoutes,
+  storageRoutes,
 } from "./routes/index.js";
 import { createOpenApiHono } from "./utils/openapi-hono.js";
 
@@ -23,4 +24,5 @@ export const app = createOpenApiHono()
   .route("/api/auth", authRoutes)
   .route("/api/me", meRoutes)
   .route("/api/categories", categoryRoutes)
-  .route("/api/products", productRoutes);
+  .route("/api/products", productRoutes)
+  .route("/api/storages", storageRoutes);
