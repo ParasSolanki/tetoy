@@ -182,3 +182,5 @@ export const getStorageResponseSchema = successSchema.extend({
     }),
   }),
 });
+
+export const deleteStorageResponseSchema = successSchema;

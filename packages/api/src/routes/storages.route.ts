@@ -3,12 +3,14 @@ import {
   and,
   desc,
   eq,
+  inArray,
   isNull,
   like,
   sql,
 } from "@tetoy/db/drizzle";
 import {
   createStorageRoute,
+  deleteStorageRoute,
   getPaginatedStoragesRoute,
   getStorageRoute,
 } from "../openapi/storages.openapi.js";
@@ -19,6 +21,7 @@ import {
   productsTable,
   storageActivityLogsTable,
   storageBlocksTable,
+  storageBoxesTable,
   storagesTable,
   subCategoriesTable,
   usersTable,
@@ -30,6 +33,7 @@ import {
 } from "../utils/response.js";
 import { getBlocksFromDimension } from "../utils/storage.js";
 import pMap from "p-map";
+import { z } from "zod";
 
 export const route = createProtectedOpenApiHono()
   .openapi(getPaginatedStoragesRoute, async (c) => {
@@ -360,6 +364,98 @@ export const route = createProtectedOpenApiHono()
         },
         200
       );
+    } catch (e) {
+      return internalServerError(c);
+    }
+  })
+  .openapi(deleteStorageRoute, async (c) => {
+    const param = c.req.valid("param");
+
+    try {
+      const storage = await db
+        .select({ id: storagesTable.id })
+        .from(storagesTable)
+        .where(
+          and(eq(storagesTable.id, param.id), isNull(storagesTable.deletedAt))
+        );
+
+      if (!storage) {
+        return badRequestError(c, { message: "Storage does not exists" });
+      }
+    } catch (e) {
+      return internalServerError(c);
+    }
+
+    try {
+      const authUser = c.get("user");
+      const date = new Date(); // deleted or updated date
+
+      await db.transaction(async (tx) => {
+        const [storage] = await tx
+          .select({
+            id: storagesTable.id,
+            name: storagesTable.name,
+            blocks: sql`
+            case
+              when count(${storageBlocksTable.id}) = 0 then json('[]')
+              else json_group_array(
+                      json_object('id', ${storageBlocksTable.id})
+                    )
+            end`
+              .mapWith(String)
+              .as("blocks"),
+          })
+          .from(storagesTable)
+          .innerJoin(
+            storageBlocksTable,
+            eq(storageBlocksTable.storageId, storagesTable.id)
+          )
+          .where(eq(storagesTable.id, param.id))
+          .groupBy(storagesTable.id);
+
+        await tx
+          .update(storagesTable)
+          .set({
+            deletedAt: date,
+            updatedAt: date,
+            updatedById: authUser.id,
+          })
+          .where(eq(storagesTable.id, param.id));
+
+        await tx
+          .update(storageBlocksTable)
+          .set({
+            deletedAt: date,
+            updatedAt: date,
+          })
+          .where(eq(storageBlocksTable.storageId, param.id));
+
+        const blockIds = z
+          .object({ id: z.string() })
+          .array()
+          .parse(JSON.parse(storage.blocks))
+          .map((b) => b.id);
+
+        if (blockIds.length) {
+          await tx
+            .update(storageBoxesTable)
+            .set({
+              deletedAt: date,
+              updatedAt: date,
+            })
+            .where(inArray(storageBoxesTable.blockId, blockIds));
+        }
+
+        await tx.insert(storageActivityLogsTable).values({
+          action: "DELETE",
+          message: `Deleted storage '${storage.name}'`,
+          timestamp: date,
+          userId: authUser.id,
+          storageId: storage.id,
+        });
+      });
+
+      return c.json({ ok: true }, 200);
     } catch (e) {
       return internalServerError(c);
     }

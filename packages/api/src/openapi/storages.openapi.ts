@@ -11,6 +11,7 @@ import {
   paginatedStoragesSearchSchema,
   createStorageResponseSchema,
   getStorageResponseSchema,
+  deleteStorageResponseSchema,
 } from "../common/storages.schema.js";
 
 const storageIdSchema = z.string().openapi({
@@ -137,6 +138,51 @@ export const getStorageRoute = createRoute({
       content: {
         "application/json": {
           schema: getStorageResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: badRequestErrorSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: forbiddenErrorSchema,
+        },
+      },
+    },
+    500: {
+      description: "Something went wrong",
+      content: {
+        "application/json": {
+          schema: internalServerErrorSchema,
+        },
+      },
+    },
+  },
+});
+
+export const deleteStorageRoute = createRoute({
+  path: "/{id}",
+  method: "delete",
+  tags: ["Storages"],
+  request: {
+    params: z.object({
+      id: storageIdSchema,
+    }),
+  },
+  responses: {
+    200: {
+      description: "Delete storage",
+      content: {
+        "application/json": {
+          schema: deleteStorageResponseSchema,
         },
       },
     },
