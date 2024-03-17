@@ -258,7 +258,7 @@ export const route = createProtectedOpenApiHono()
     const param = c.req.valid("param");
 
     try {
-      const storage = await db
+      const [storage] = await db
         .select({ id: storagesTable.id })
         .from(storagesTable)
         .where(
@@ -372,7 +372,7 @@ export const route = createProtectedOpenApiHono()
     const param = c.req.valid("param");
 
     try {
-      const storage = await db
+      const [storage] = await db
         .select({ id: storagesTable.id })
         .from(storagesTable)
         .where(
@@ -398,9 +398,7 @@ export const route = createProtectedOpenApiHono()
             blocks: sql`
             case
               when count(${storageBlocksTable.id}) = 0 then json('[]')
-              else json_group_array(
-                      json_object('id', ${storageBlocksTable.id})
-                    )
+              else json_group_array(${storageBlocksTable.id})
             end`
               .mapWith(String)
               .as("blocks"),
@@ -430,11 +428,7 @@ export const route = createProtectedOpenApiHono()
           })
           .where(eq(storageBlocksTable.storageId, param.id));
 
-        const blockIds = z
-          .object({ id: z.string() })
-          .array()
-          .parse(JSON.parse(storage.blocks))
-          .map((b) => b.id);
+        const blockIds = z.string().array().parse(JSON.parse(storage.blocks));
 
         if (blockIds.length) {
           await tx
