@@ -184,3 +184,28 @@ export const getStorageResponseSchema = successSchema.extend({
 });
 
 export const deleteStorageResponseSchema = successSchema;
+
+export const getStorageLogsSearchSchema = z.object({
+  cursor: z.coerce.number(z.string()).optional(),
+});
+
+export const getStorageLogsResponseSchema = successSchema.extend({
+  data: z.object({
+    logs: z
+      .object({
+        id: z.string(),
+        action: z.string(),
+        message: z.string(),
+        timestamp: z.string(),
+        user: z
+          .object({
+            id: z.string(),
+            displayName: z.string().nullable(),
+            avatarUrl: z.string().nullable(),
+          })
+          .nullable(),
+      })
+      .array(),
+    cursor: z.number().optional(),
+  }),
+});

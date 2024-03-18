@@ -6,12 +6,15 @@ import {
   inArray,
   isNull,
   like,
+  lt,
+  lte,
   sql,
 } from "@tetoy/db/drizzle";
 import {
   createStorageRoute,
   deleteStorageRoute,
   getPaginatedStoragesRoute,
+  getStorageLogsRoute,
   getStorageRoute,
 } from "../openapi/storages.openapi.js";
 import { createProtectedOpenApiHono } from "../utils/openapi-hono.js";
@@ -450,6 +453,69 @@ export const route = createProtectedOpenApiHono()
       });
 
       return c.json({ ok: true }, 200);
+    } catch (e) {
+      return internalServerError(c);
+    }
+  })
+  .openapi(getStorageLogsRoute, async (c) => {
+    const param = c.req.valid("param");
+    const query = c.req.valid("query");
+
+    if (query.cursor && isNaN(new Date(query.cursor).getTime())) {
+      return badRequestError(c, { message: "Invalid cursor" });
+    }
+
+    try {
+      const [storage] = await db
+        .select({ id: storagesTable.id })
+        .from(storagesTable)
+        .where(
+          and(eq(storagesTable.id, param.id), isNull(storagesTable.deletedAt))
+        );
+
+      if (!storage) {
+        return badRequestError(c, { message: "Storage does not exists" });
+      }
+    } catch (e) {
+      return internalServerError(c);
+    }
+
+    try {
+      const cursor = query.cursor ? new Date(query.cursor) : new Date();
+
+      const logs = await db
+        .select({
+          id: storageActivityLogsTable.id,
+          action: storageActivityLogsTable.action,
+          message: storageActivityLogsTable.message,
+          timestamp: storageActivityLogsTable.timestamp,
+          user: {
+            id: usersTable.id,
+            displayName: usersTable.displayName,
+            avatarUrl: usersTable.avatarUrl,
+          },
+        })
+        .from(storageActivityLogsTable)
+        .innerJoin(
+          usersTable,
+          eq(usersTable.id, storageActivityLogsTable.userId)
+        )
+        .where(
+          and(
+            eq(storageActivityLogsTable.storageId, param.id),
+            lte(storageActivityLogsTable.timestamp, cursor)
+          )
+        )
+        .orderBy(desc(storageActivityLogsTable.timestamp))
+        .limit(20);
+
+      return c.json(
+        {
+          ok: true,
+          data: { logs, cursor: logs.at(-1)?.timestamp.getTime() },
+        },
+        200
+      );
     } catch (e) {
       return internalServerError(c);
     }
