@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   flexRender,
   getCoreRowModel,
@@ -37,6 +37,7 @@ import {
   DropdownMenuAlertDialogItem,
   DropdownMenuContent,
   DropdownMenuDialogItem,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
@@ -52,7 +53,12 @@ import { Route as StoragesRoute } from "~/routes/_auth/storages/route";
 import { api } from "~/utils/api-client";
 import { format } from "date-fns";
 import { HTTPError } from "ky";
-import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import {
+  LinkIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  Trash2Icon,
+} from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { useDebounceCallback } from "usehooks-ts";
@@ -359,6 +365,11 @@ export function StoragesTableActions({ row }: StoragesTableActions) {
           }
         }}
       >
+        <DropdownMenuItem asChild>
+          <Link to="/storage/$id" params={{ id: storage.id }}>
+            <LinkIcon className="mr-2 size-4" /> View
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuDialogItem
           triggerChildern={
             <>
@@ -384,7 +395,7 @@ export function StoragesTableActions({ row }: StoragesTableActions) {
           }
           onSelect={handleItemSelect}
           onOpenChange={handleItemOpenChange}
-          className="text-red-500 focus:cursor-pointer focus:bg-destructive focus:text-white"
+          className="text-red-500 focus:bg-destructive focus:text-white"
         >
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>

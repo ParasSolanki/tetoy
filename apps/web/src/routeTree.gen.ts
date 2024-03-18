@@ -20,6 +20,7 @@ import { Route as AuthIndexRouteImport } from './routes/_auth/index.route'
 import { Route as AuthStoragesRouteImport } from './routes/_auth/storages/route'
 import { Route as AuthProductsRouteImport } from './routes/_auth/products/route'
 import { Route as AuthCategoriesRouteImport } from './routes/_auth/categories/route'
+import { Route as AuthStorageIdRouteImport } from './routes/_auth/storage/$id/route'
 
 // Create Virtual Routes
 
@@ -94,6 +95,13 @@ const AuthCategoriesRouteRoute = AuthCategoriesRouteImport.update({
   import('./routes/_auth/categories/route.lazy').then((d) => d.Route),
 )
 
+const AuthStorageIdRouteRoute = AuthStorageIdRouteImport.update({
+  path: '/storage/$id',
+  getParentRoute: () => AuthRouteRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/storage/$id/route.lazy').then((d) => d.Route),
+)
+
 const AuthProfileProfileIndexLazyRoute =
   AuthProfileProfileIndexLazyImport.update({
     path: '/profile/',
@@ -162,6 +170,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRouteImport
     }
+    '/_auth/storage/$id': {
+      preLoaderRoute: typeof AuthStorageIdRouteImport
+      parentRoute: typeof AuthRouteImport
+    }
     '/_auth/_settings/settings/appearance': {
       preLoaderRoute: typeof AuthSettingsSettingsAppearanceLazyImport
       parentRoute: typeof AuthSettingsLazyImport
@@ -190,6 +202,7 @@ export const routeTree = rootRoute.addChildren([
       AuthSettingsSettingsSecurityLazyRoute,
     ]),
     AuthIndexRouteRoute,
+    AuthStorageIdRouteRoute,
   ]),
   SigninRouteRoute,
   SignupRouteRoute,

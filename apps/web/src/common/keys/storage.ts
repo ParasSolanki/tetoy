@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import {
+  getStorageResponseSchema,
   paginatedStoragesResponseSchema,
   paginatedStoragesSearchSchema,
 } from "@tetoy/api/schema";
@@ -12,10 +13,14 @@ export const storagesSearchSchema = z.object({
   perPage: paginatedStoragesSearchSchema.shape.perPage.catch(20),
 });
 
+export const storageIdSchema = z.string();
+
 export const storagesKeys = {
   all: ["storages"] as const,
   list: (values: z.infer<typeof storagesSearchSchema>) =>
     [...storagesKeys.all, "list", values] as const,
+  details: (id: z.infer<typeof storageIdSchema>) =>
+    [...storagesKeys.all, "details", { id }] as const,
 };
 
 export const storagesQuries = {
@@ -38,5 +43,15 @@ export const storagesQuries = {
         return paginatedStoragesResponseSchema.parse(await res.json());
       },
       placeholderData: (data) => data,
+    }),
+  details: (id: z.infer<typeof storageIdSchema>) =>
+    queryOptions({
+      staleTime: 60 * 1000,
+      queryKey: storagesKeys.details(id),
+      queryFn: async () => {
+        const res = api.get(`storages/${id}`);
+
+        return getStorageResponseSchema.parse(await res.json());
+      },
     }),
 };
