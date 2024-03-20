@@ -1,9 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { storageDimensionMap } from "@tetoy/api/schema";
 import { storageBlockSchema, storagesQuries } from "~/common/keys/storage";
 import { buttonVariants } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
 import * as React from "react";
 import { z } from "zod";
@@ -22,7 +21,7 @@ function StorageDetailsIndexPage() {
   const storageId = StorageIdRoute.useParams({ select: (p) => p.id });
   const searchBlock = StorageIdIndexRoute.useSearch({ select: (s) => s.block });
 
-  const { isLoading, data } = useQuery(storagesQuries.details(storageId));
+  const { data } = useSuspenseQuery(storagesQuries.details(storageId));
 
   const d = data?.data.storage.dimension
     ? // @ts-expect-error storage dimension is defined
@@ -54,8 +53,6 @@ function StorageDetailsIndexPage() {
     return grid.flatMap((g) => g);
   }, [data?.data.storage.blocks, searchBlock]);
 
-  if (isLoading) return <StorageGridSkeleton />;
-
   if (!data) return "no data";
 
   return (
@@ -81,7 +78,9 @@ function StorageDetailsIndexPage() {
                 search={{ block: b.id }}
                 data-selected={b.selected}
                 className={cn(
-                  buttonVariants({ variant: "secondary" }),
+                  buttonVariants({
+                    variant: b.selected ? "default" : "secondary",
+                  }),
                   "data-[selected=true]:ring-2 data-[selected=true]:ring-offset-2",
                 )}
               >
@@ -93,16 +92,6 @@ function StorageDetailsIndexPage() {
           )}
         </div>
       </section>
-    </div>
-  );
-}
-
-function StorageGridSkeleton() {
-  return (
-    <div className="grid grid-cols-4 grid-rows-4 gap-4">
-      {Array.from({ length: 16 }).map((_x, id) => (
-        <Skeleton key={id} className="h-11 w-full" />
-      ))}
     </div>
   );
 }

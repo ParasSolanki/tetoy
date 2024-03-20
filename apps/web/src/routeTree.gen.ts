@@ -21,6 +21,7 @@ import { Route as AuthStoragesRouteImport } from './routes/_auth/storages/route'
 import { Route as AuthProductsRouteImport } from './routes/_auth/products/route'
 import { Route as AuthCategoriesRouteImport } from './routes/_auth/categories/route'
 import { Route as AuthStorageIdRouteImport } from './routes/_auth/storage/$id/route'
+import { Route as AuthStorageIdActivityRouteImport } from './routes/_auth/storage/$id/activity/route'
 import { Route as AuthStorageIdIndexRouteImport } from './routes/_auth/storage/$id/index/route'
 
 // Create Virtual Routes
@@ -35,9 +36,6 @@ const AuthSettingsSettingsSecurityLazyImport = createFileRoute(
 )()
 const AuthSettingsSettingsAppearanceLazyImport = createFileRoute(
   '/_auth/_settings/settings/appearance',
-)()
-const AuthStorageIdActivityRouteLazyImport = createFileRoute(
-  '/_auth/storage/$id/activity',
 )()
 
 // Create/Update Routes
@@ -134,15 +132,14 @@ const AuthSettingsSettingsAppearanceLazyRoute =
     ),
   )
 
-const AuthStorageIdActivityRouteLazyRoute =
-  AuthStorageIdActivityRouteLazyImport.update({
+const AuthStorageIdActivityRouteRoute = AuthStorageIdActivityRouteImport.update(
+  {
     path: '/activity',
     getParentRoute: () => AuthStorageIdRouteRoute,
-  } as any).lazy(() =>
-    import('./routes/_auth/storage/$id/activity/route.lazy').then(
-      (d) => d.Route,
-    ),
-  )
+  } as any,
+).lazy(() =>
+  import('./routes/_auth/storage/$id/activity/route.lazy').then((d) => d.Route),
+)
 
 const AuthStorageIdIndexRouteRoute = AuthStorageIdIndexRouteImport.update({
   path: '/',
@@ -200,7 +197,7 @@ declare module '@tanstack/react-router' {
       parentRoute: typeof AuthStorageIdRouteImport
     }
     '/_auth/storage/$id/activity': {
-      preLoaderRoute: typeof AuthStorageIdActivityRouteLazyImport
+      preLoaderRoute: typeof AuthStorageIdActivityRouteImport
       parentRoute: typeof AuthStorageIdRouteImport
     }
     '/_auth/_settings/settings/appearance': {
@@ -233,7 +230,7 @@ export const routeTree = rootRoute.addChildren([
     AuthIndexRouteRoute,
     AuthStorageIdRouteRoute.addChildren([
       AuthStorageIdIndexRouteRoute,
-      AuthStorageIdActivityRouteLazyRoute,
+      AuthStorageIdActivityRouteRoute,
     ]),
   ]),
   SigninRouteRoute,
