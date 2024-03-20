@@ -21,6 +21,7 @@ import { Route as AuthStoragesRouteImport } from './routes/_auth/storages/route'
 import { Route as AuthProductsRouteImport } from './routes/_auth/products/route'
 import { Route as AuthCategoriesRouteImport } from './routes/_auth/categories/route'
 import { Route as AuthStorageIdRouteImport } from './routes/_auth/storage/$id/route'
+import { Route as AuthStorageIdIndexRouteImport } from './routes/_auth/storage/$id/index/route'
 
 // Create Virtual Routes
 
@@ -34,6 +35,9 @@ const AuthSettingsSettingsSecurityLazyImport = createFileRoute(
 )()
 const AuthSettingsSettingsAppearanceLazyImport = createFileRoute(
   '/_auth/_settings/settings/appearance',
+)()
+const AuthStorageIdActivityRouteLazyImport = createFileRoute(
+  '/_auth/storage/$id/activity',
 )()
 
 // Create/Update Routes
@@ -130,6 +134,23 @@ const AuthSettingsSettingsAppearanceLazyRoute =
     ),
   )
 
+const AuthStorageIdActivityRouteLazyRoute =
+  AuthStorageIdActivityRouteLazyImport.update({
+    path: '/activity',
+    getParentRoute: () => AuthStorageIdRouteRoute,
+  } as any).lazy(() =>
+    import('./routes/_auth/storage/$id/activity/route.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const AuthStorageIdIndexRouteRoute = AuthStorageIdIndexRouteImport.update({
+  path: '/',
+  getParentRoute: () => AuthStorageIdRouteRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/storage/$id/index/route.lazy').then((d) => d.Route),
+)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -174,6 +195,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthStorageIdRouteImport
       parentRoute: typeof AuthRouteImport
     }
+    '/_auth/storage/$id/': {
+      preLoaderRoute: typeof AuthStorageIdIndexRouteImport
+      parentRoute: typeof AuthStorageIdRouteImport
+    }
+    '/_auth/storage/$id/activity': {
+      preLoaderRoute: typeof AuthStorageIdActivityRouteLazyImport
+      parentRoute: typeof AuthStorageIdRouteImport
+    }
     '/_auth/_settings/settings/appearance': {
       preLoaderRoute: typeof AuthSettingsSettingsAppearanceLazyImport
       parentRoute: typeof AuthSettingsLazyImport
@@ -202,7 +231,10 @@ export const routeTree = rootRoute.addChildren([
       AuthSettingsSettingsSecurityLazyRoute,
     ]),
     AuthIndexRouteRoute,
-    AuthStorageIdRouteRoute,
+    AuthStorageIdRouteRoute.addChildren([
+      AuthStorageIdIndexRouteRoute,
+      AuthStorageIdActivityRouteLazyRoute,
+    ]),
   ]),
   SigninRouteRoute,
   SignupRouteRoute,

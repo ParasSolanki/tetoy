@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { createLazyFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { storagesQuries } from "~/common/keys/storage";
+import { Skeleton } from "~/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Route as StorageIdRoute } from "./route";
 
 export const Route = createLazyFileRoute("/_auth/storage/$id")({
@@ -11,19 +13,34 @@ function StorageDetailsPage() {
   const storageId = StorageIdRoute.useParams({ select: (p) => p.id });
   const { isLoading, data } = useQuery(storagesQuries.details(storageId));
 
-  if (isLoading) return "loading...";
-
-  if (!data) return "no data";
-
-  const storage = data.data.storage;
-
   return (
-    <div>
+    <Tabs defaultValue="manage">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-black">{storage.name}</h1>
-
-        <div className="flex items-center space-x-3"></div>
+        {isLoading && !data && <Skeleton className="h-6 w-[250px]" />}
+        {!isLoading && data && data.data.storage.name && (
+          <h1 className="text-4xl font-black">{data.data.storage.name}</h1>
+        )}
+        <div className="flex items-center space-x-3">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="manage" asChild>
+              <Link to="/storage/$id/" params={{ id: storageId }}>
+                Manage
+              </Link>
+            </TabsTrigger>
+            <TabsTrigger value="activity" asChild>
+              <Link to="/storage/$id/activity" params={{ id: storageId }}>
+                Activity
+              </Link>
+            </TabsTrigger>
+          </TabsList>
+        </div>
       </div>
-    </div>
+      <TabsContent value="manage" className="mt-6 space-y-4">
+        <Outlet />
+      </TabsContent>
+      <TabsContent value="activity" className="mt-6 space-y-4">
+        <Outlet />
+      </TabsContent>
+    </Tabs>
   );
 }

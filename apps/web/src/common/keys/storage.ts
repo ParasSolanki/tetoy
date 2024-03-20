@@ -13,6 +13,12 @@ export const storagesSearchSchema = z.object({
   perPage: paginatedStoragesSearchSchema.shape.perPage.catch(20),
 });
 
+export const storageBlockSchema = getStorageResponseSchema.shape.data
+  .pick({
+    storage: true,
+  })
+  .shape.storage.pick({ blocks: true }).shape.blocks;
+
 export const storageIdSchema = z.string();
 
 export const storagesKeys = {
