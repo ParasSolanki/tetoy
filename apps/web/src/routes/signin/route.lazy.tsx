@@ -20,7 +20,8 @@ import { Loader2Icon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Route as SigninRoute } from "./route";
+
+// import { Route as SigninRoute } from "./route";
 
 export const Route = createLazyFileRoute("/signin")({
   component: SignInPage,
@@ -61,9 +62,9 @@ type AuthValues = z.infer<typeof authSchema>;
 function SignInForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const redirectUrl = SigninRoute.useSearch({
-    select: (search) => search.redirectUrl,
-  });
+  // const redirectUrl = SigninRoute.useSearch({
+  //   select: (search) => search.redirectUrl,
+  // });
   const form = useForm<AuthValues>({
     resolver: zodResolver(authSchema),
     defaultValues: {
@@ -112,7 +113,7 @@ function SignInForm() {
         authStore.setIsAuthenticated(true);
         queryClient.invalidateQueries({ queryKey: ["session"] });
         navigate({
-          to: redirectUrl ?? "/",
+          to: "/",
         });
       },
     });

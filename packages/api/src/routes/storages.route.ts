@@ -7,7 +7,6 @@ import {
   isNull,
   like,
   lt,
-  lte,
   sql,
 } from "@tetoy/db/drizzle";
 import {
@@ -503,7 +502,7 @@ export const route = createProtectedOpenApiHono()
         .where(
           and(
             eq(storageActivityLogsTable.storageId, param.id),
-            lte(storageActivityLogsTable.timestamp, cursor)
+            lt(storageActivityLogsTable.timestamp, cursor)
           )
         )
         .orderBy(desc(storageActivityLogsTable.timestamp))

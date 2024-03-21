@@ -13,7 +13,7 @@ const envSchema = z.object({
 
 const options = {
   fallbacks: ["ui-sans-serif", "Segoe UI", "Arial"],
-  resolvePath: (id) => new URL("./public" + id, import.meta.url),
+  resolvePath: (id: string) => new URL("./public" + id, import.meta.url),
 };
 
 // https://vitejs.dev/config/
