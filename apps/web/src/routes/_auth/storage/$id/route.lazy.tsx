@@ -1,5 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { createLazyFileRoute, Link, Outlet } from "@tanstack/react-router";
+import {
+  createLazyFileRoute,
+  Link,
+  Outlet,
+  useChildMatches,
+} from "@tanstack/react-router";
 import { storagesQuries } from "~/common/keys/storage";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
@@ -12,9 +17,15 @@ export const Route = createLazyFileRoute("/_auth/storage/$id")({
 function StorageDetailsPage() {
   const storageId = StorageIdRoute.useParams({ select: (p) => p.id });
   const { isLoading, data } = useQuery(storagesQuries.details(storageId));
+  const matches = useChildMatches();
+
+  const defaultValue =
+    matches[0].routeId === "/_auth/storage/$id/activity"
+      ? "activity"
+      : "manage";
 
   return (
-    <Tabs defaultValue="manage">
+    <Tabs defaultValue={defaultValue}>
       <div className="flex items-center justify-between">
         {isLoading && !data && <Skeleton className="h-6 w-[250px]" />}
         {!isLoading && data && data.data.storage.name && (
