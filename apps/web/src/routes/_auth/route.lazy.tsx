@@ -94,7 +94,7 @@ function Sidebar() {
         </SheetTrigger>
         <SheetContent side="left" className="group w-[250px]">
           <SheetHeader className="mb-2">
-            <SheetTitle className="text-xl">Fifoy</SheetTitle>
+            <SheetTitle className="text-xl">Tetoy</SheetTitle>
           </SheetHeader>
           <SidebarLinks />
         </SheetContent>
