@@ -71,6 +71,13 @@
       "when": 1710696483233,
       "tag": "0009_perpetual_ravenous",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1711123036260,
+      "tag": "0010_good_christian_walker",
+      "breakpoints": true
     }
   ]
 }

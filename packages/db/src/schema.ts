@@ -91,7 +91,7 @@ export const countriesTable = sqliteTable("countries", {
     .notNull()
     .primaryKey()
     .$defaultFn(() => createId()),
-  name: text("name"),
+  name: text("name").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(strftime('%s', 'now'))`),
