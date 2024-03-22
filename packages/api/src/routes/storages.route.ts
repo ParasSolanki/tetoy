@@ -61,8 +61,8 @@ export const route = createProtectedOpenApiHono()
               id: productsTable.id,
               name: productsTable.name,
               category: sql`
-                case 
-                    when count(${productsTable.categoryId}) = 0 then NULL
+                case
+                    when ${productsTable.categoryId} is NULL then NULL
                     else json_object('id', ${categoriesTable.id}, 'name', ${categoriesTable.name})
                 end
               `
@@ -70,7 +70,7 @@ export const route = createProtectedOpenApiHono()
                 .as("category"),
               subCategory: sql`
                 case 
-                    when count(${productsTable.subCategoryId}) = 0 then NULL
+                    when ${productsTable.subCategoryId} is NULL then NULL
                     else json_object('id', ${subCategoriesTable.id}, 'name', ${subCategoriesTable.name})
                 end
               `
