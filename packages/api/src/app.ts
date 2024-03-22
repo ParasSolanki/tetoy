@@ -7,6 +7,7 @@ import {
   productRoutes,
   storageRoutes,
   userRoutes,
+  countryRoutes,
 } from "./routes/index.js";
 import { createOpenApiHono } from "./utils/openapi-hono.js";
 import { apiReference } from "@scalar/hono-api-reference";
@@ -33,6 +34,7 @@ export const app = createOpenApiHono()
   .route("/api/auth", authRoutes)
   .route("/api/me", meRoutes)
   .route("/api/users", userRoutes)
+  .route("/api/countries", countryRoutes)
   .route("/api/categories", categoryRoutes)
   .route("/api/products", productRoutes)
   .route("/api/storages", storageRoutes);
