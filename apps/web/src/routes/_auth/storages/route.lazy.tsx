@@ -77,7 +77,13 @@ function AddStorageDialog() {
 
         <StorageForm
           isPending={isPending}
-          onSubmit={(values) => mutate(values)}
+          onSubmit={(values) =>
+            mutate(values, {
+              onSuccess: () => {
+                setOpen(false);
+              },
+            })
+          }
         />
       </DialogContent>
     </Dialog>

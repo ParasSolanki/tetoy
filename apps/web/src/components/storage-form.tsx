@@ -5,6 +5,7 @@ import {
   paginatedStoragesResponseSchema,
 } from "@tetoy/api/schema";
 import { productsQuries } from "~/common/keys/products";
+import { usersQuries } from "~/common/keys/users";
 import { Button } from "~/components/ui/button";
 import {
   Command,
@@ -58,6 +59,10 @@ interface StorageFormProps {
   onSubmit: (values: Storage) => void;
 }
 
+type StorageSuperVisor = Pick<
+  NonNullable<EditStorage["superVisor"]>,
+  "id" | "displayName"
+>;
 type StorageProduct = EditStorage["product"];
 type StorageProductCategory = NonNullable<StorageProduct>["category"];
 type StorageProductSubCategory = NonNullable<StorageProduct>["subCategory"];
@@ -68,11 +73,17 @@ export function StorageForm({
   onSubmit,
 }: StorageFormProps) {
   const [open, setOpen] = React.useState(false);
+  const [superVisorOpen, setSuperVisorOpen] = React.useState(false);
   const [product, setProduct] = React.useState<StorageProductCategory>(null);
   const [category, setCategory] = React.useState<StorageProductCategory>(null);
   const [subCategory, setSubCategory] =
     React.useState<StorageProductSubCategory>(null);
+  const [superVisor, setSuperVisor] = React.useState<StorageSuperVisor>();
   const [debouncedSearchTerm, setSearchTerm] = useDebounceValue("", 500);
+  const [superVisorSearchTerm, setSuperVisorSearchTerm] = useDebounceValue(
+    "",
+    500,
+  );
 
   const form = useForm<z.infer<typeof createStorageSchema>>({
     resolver: zodResolver(createStorageSchema),
@@ -88,6 +99,12 @@ export function StorageForm({
   const { data, fetchNextPage, isFetching } = useInfiniteQuery(
     productsQuries.infinite({ name: debouncedSearchTerm }),
   );
+
+  const {
+    data: superVisors,
+    fetchNextPage: fetchNextPageSuperVisor,
+    isFetching: isFetchingSuperVisor,
+  } = useInfiniteQuery(usersQuries.infinite({ name: superVisorSearchTerm }));
 
   const handleChangeProduct = React.useCallback(
     (product: NonNullable<StorageProduct>) => {
@@ -266,6 +283,12 @@ export function StorageForm({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="1x1">1x1</SelectItem>
+                        <SelectItem value="2x2">2x2</SelectItem>
+                        <SelectItem value="3x3">3x3</SelectItem>
+                        <SelectItem value="4x4">4x4</SelectItem>
+                        <SelectItem value="5x5">5x5</SelectItem>
+                        <SelectItem value="6x6">6x6</SelectItem>
+                        <SelectItem value="7x7">7x7</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -289,6 +312,100 @@ export function StorageForm({
               />
             </div>
           </div>
+
+          <FormField
+            control={form.control}
+            name="superVisorId"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Super visor</FormLabel>
+                <Popover open={superVisorOpen} onOpenChange={setSuperVisorOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={superVisorOpen}
+                        className="justify-between"
+                      >
+                        {field.value && superVisor
+                          ? superVisor.displayName
+                          : "Select supervisor..."}
+                        <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder="Search supervisor..."
+                        onInput={(e) =>
+                          setSuperVisorSearchTerm(e.currentTarget.value)
+                        }
+                      />
+                      <CommandList>
+                        {!isFetchingSuperVisor &&
+                          !superVisors?.pages[0].data.users.length && (
+                            <CommandEmpty>No supervisors</CommandEmpty>
+                          )}
+
+                        {!!superVisors &&
+                          !!superVisors.pages &&
+                          !!superVisors.pages[0].data.users.length && (
+                            <CommandGroup>
+                              <Virtuoso
+                                style={{ height: "160px" }}
+                                data={superVisors.pages}
+                                endReached={() => fetchNextPageSuperVisor()}
+                                overscan={200}
+                                itemContent={(index) => {
+                                  if (
+                                    superVisors.pages[index].data.users.length <
+                                    1
+                                  ) {
+                                    return (
+                                      <div className="h-2 opacity-0">end</div>
+                                    );
+                                  }
+
+                                  return superVisors.pages[
+                                    index
+                                  ].data.users.map((u) => (
+                                    <CommandItem
+                                      key={u.id}
+                                      value={u.id}
+                                      onSelect={() => {
+                                        form.setValue("superVisorId", u.id);
+                                        setSuperVisor({
+                                          id: u.id,
+                                          displayName: u.displayName,
+                                        });
+                                        setSuperVisorOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          superVisor?.id === u.id
+                                            ? "opacity-100"
+                                            : "opacity-0",
+                                        )}
+                                      />
+                                      {u.displayName}
+                                    </CommandItem>
+                                  ));
+                                }}
+                              />
+                            </CommandGroup>
+                          )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <DialogFooter className="space-y-4 sm:space-y-0">
             <DialogClose asChild>
