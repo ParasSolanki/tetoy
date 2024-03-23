@@ -251,7 +251,7 @@ export const route = createProtectedOpenApiHono()
         );
 
         await tx.insert(storageActivityLogsTable).values({
-          action: "CREATE",
+          action: STORAGE_ACTIONS.CREATE,
           storageId: storage.id,
           userId: authUser.id,
           message: `Created new storage '${storage.name}' with dimension '${storage.dimension}' and '${storage.capacity}' capacity.`,
@@ -268,7 +268,6 @@ export const route = createProtectedOpenApiHono()
         201
       );
     } catch (e) {
-      console.log(e);
       return internalServerError(c);
     }
   })
@@ -459,7 +458,7 @@ export const route = createProtectedOpenApiHono()
         }
 
         await tx.insert(storageActivityLogsTable).values({
-          action: "DELETE",
+          action: STORAGE_ACTIONS.DELETE,
           message: `Deleted storage '${storage.name}'.`,
           timestamp: date,
           userId: authUser.id,
