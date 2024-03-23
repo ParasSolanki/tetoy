@@ -254,3 +254,46 @@ export const paginatedStorageBlockBoxesResponseSchema = successSchema.extend({
     }),
   }),
 });
+
+export const createStorageBoxSchema = z.object({
+  userId: z.string({ required_error: "User id is required" }),
+  productId: z.string({ required_error: "Product id is required" }),
+  totalBoxes: z
+    .number({ required_error: "Total boxes are required" })
+    .min(0, "Total boxes must be greater than or equal to 0"),
+  grade: z
+    .string({ required_error: "Grade is required" })
+    .min(0, "Grade is required")
+    .max(50, "Grade can at most contain 50 character(s)"),
+  subGrade: z
+    .string()
+    .max(50, "Sub grade can at most contain 50 character(s)")
+    .optional()
+    .nullable(),
+  weight: z
+    .number({ required_error: "Weight is required" })
+    .min(0, "Weight must be greater than or equal to 0"),
+  price: z
+    .number({ required_error: "Price is required" })
+    .min(0, "Price must be greater than or equal to 0"),
+  countries: z
+    .string()
+    .array()
+    .min(1, "Countries must contain at least 1 element(s)"),
+});
+
+export const createStorageBoxResponseSchema = successSchema.extend({
+  data: z.object({
+    box: z.object({
+      id: z.string(),
+      blockId: z.string(),
+      userId: z.string(),
+      productId: z.string(),
+      grade: z.string(),
+      subGrade: z.string().nullable(),
+      weight: z.number(),
+      price: z.number(),
+      totalBoxes: z.number(),
+    }),
+  }),
+});
