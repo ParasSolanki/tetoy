@@ -15,6 +15,7 @@ import {
   getPaginatedStoragesRoute,
   getStorageLogsRoute,
   getStorageRoute,
+  paginatedStorageBlockBoxesRoute,
 } from "../openapi/storages.openapi.js";
 import { createProtectedOpenApiHono } from "../utils/openapi-hono.js";
 import {
@@ -512,6 +513,128 @@ export const route = createProtectedOpenApiHono()
         {
           ok: true,
           data: { logs, cursor: logs.at(-1)?.timestamp.getTime() },
+        },
+        200
+      );
+    } catch (e) {
+      return internalServerError(c);
+    }
+  })
+  .openapi(paginatedStorageBlockBoxesRoute, async (c) => {
+    const params = c.req.valid("param");
+
+    try {
+      const [storages, blocks] = await Promise.all([
+        db
+          .select({ id: storagesTable.id })
+          .from(storagesTable)
+          .where(
+            and(
+              eq(storagesTable.id, params.id),
+              isNull(storagesTable.deletedAt)
+            )
+          ),
+        db
+          .select({ id: storageBlocksTable.id })
+          .from(storageBlocksTable)
+          .where(
+            and(
+              eq(storageBlocksTable.storageId, params.id),
+              eq(storageBlocksTable.id, params.blockId),
+              isNull(storageBlocksTable.deletedAt)
+            )
+          ),
+      ]);
+
+      const storage = storages[0];
+      const block = blocks[0];
+
+      if (!storage) {
+        return badRequestError(c, { message: "Storage does not exists" });
+      }
+      if (!block) {
+        return badRequestError(c, { message: "Storage block does not exists" });
+      }
+    } catch (e) {
+      return internalServerError(c);
+    }
+
+    const { name, page, perPage } = c.req.valid("query");
+
+    try {
+      const nameLike = name ? `${name}%` : "%";
+
+      const [boxesResults, totalResults] = await Promise.allSettled([
+        db
+          .select({
+            id: storageBoxesTable.id,
+            grade: storageBoxesTable.grade,
+            price: storageBoxesTable.price,
+            weight: storageBoxesTable.weight,
+            subGrade: storageBoxesTable.subGrade,
+            totalBoxes: storageBoxesTable.totalBoxes,
+            checkedOutBoxes: storageBoxesTable.checkedOutBoxes,
+            product: {
+              id: productsTable.id,
+              name: productsTable.name,
+            },
+            user: {
+              id: usersTable.id,
+              displayName: usersTable.displayName,
+            },
+          })
+          .from(storageBoxesTable)
+          .innerJoin(usersTable, eq(usersTable.id, storageBoxesTable.userId))
+          .innerJoin(
+            productsTable,
+            eq(productsTable.id, storageBoxesTable.productId)
+          )
+          .where(
+            and(
+              isNull(storageBoxesTable.checkedOutAt),
+              isNull(storageBoxesTable.deletedAt),
+              like(productsTable.name, nameLike)
+            )
+          )
+          .orderBy(desc(storageBoxesTable.createdAt))
+          .offset((page - 1) * perPage)
+          .limit(perPage),
+        db
+          .select({
+            total: sql`count(*)`.mapWith(Number).as("total"),
+          })
+          .from(storageBoxesTable)
+          .innerJoin(
+            productsTable,
+            eq(productsTable.id, storageBoxesTable.productId)
+          )
+          .where(
+            and(
+              isNull(storageBoxesTable.checkedOutAt),
+              isNull(storageBoxesTable.deletedAt),
+              like(productsTable.name, nameLike)
+            )
+          ),
+      ]);
+
+      if (
+        boxesResults.status === "rejected" ||
+        totalResults.status === "rejected"
+      ) {
+        throw new Error("Something went wrong");
+      }
+
+      return c.json(
+        {
+          ok: true,
+          data: {
+            boxes: boxesResults.value,
+            pagination: {
+              page,
+              perPage,
+              total: Math.ceil(totalResults.value[0].total / perPage),
+            },
+          },
         },
         200
       );

@@ -209,3 +209,48 @@ export const getStorageLogsResponseSchema = successSchema.extend({
     cursor: z.number().optional(),
   }),
 });
+
+export const paginatedStorageBlockBoxesSearchSchema = z.object({
+  name: z.string().optional(),
+  page: z.coerce
+    .number(z.string())
+    .min(1, "page must be greater than or equal to 1")
+    .default(1),
+  perPage: z.coerce
+    .number(z.string())
+    .min(1, "perPage must be greater than or equal to 1")
+    .default(20),
+});
+
+export const paginatedStorageBlockBoxesResponseSchema = successSchema.extend({
+  data: z.object({
+    boxes: z
+      .object({
+        id: z.string(),
+        grade: z.string(),
+        price: z.number(),
+        weight: z.number(),
+        subGrade: z.string().nullable(),
+        totalBoxes: z.number(),
+        checkedOutBoxes: z.number(),
+        user: z
+          .object({
+            id: z.string(),
+            displayName: z.string().nullable(),
+          })
+          .nullable(),
+        product: z
+          .object({
+            id: z.string(),
+            name: z.string(),
+          })
+          .nullable(),
+      })
+      .array(),
+    pagination: z.object({
+      total: z.number(),
+      page: z.number(),
+      perPage: z.number(),
+    }),
+  }),
+});
