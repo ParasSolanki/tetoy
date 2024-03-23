@@ -7,22 +7,27 @@ import {
   isNull,
   like,
   lt,
+  countDistinct,
   sql,
 } from "@tetoy/db/drizzle";
 import {
+  createStorageBoxRoute,
   createStorageRoute,
   deleteStorageRoute,
   getPaginatedStoragesRoute,
   getStorageLogsRoute,
   getStorageRoute,
+  paginatedStorageBlockBoxesRoute,
 } from "../openapi/storages.openapi.js";
 import { createProtectedOpenApiHono } from "../utils/openapi-hono.js";
 import {
   categoriesTable,
+  countriesTable,
   db,
   productsTable,
   storageActivityLogsTable,
   storageBlocksTable,
+  storageBoxesCountriesTable,
   storageBoxesTable,
   storagesTable,
   subCategoriesTable,
@@ -36,6 +41,17 @@ import {
 import { getBlocksFromDimension } from "../utils/storage.js";
 import pMap from "p-map";
 import { z } from "zod";
+
+const STORAGE_ACTIONS = {
+  CREATE: "CREATE",
+  UPDATE: "UPDATE",
+  DELETE: "DELETE",
+  RESIZE: "RESIZE",
+  ADD_BOX: "ADD_BOX",
+  UPDATE_BOX: "UPDATE_BOX",
+  DELETE_BOX: "DELETE_BOX",
+  CHECKOUT_BOX: "CHECKOUT_BOX",
+};
 
 export const route = createProtectedOpenApiHono()
   .openapi(getPaginatedStoragesRoute, async (c) => {
@@ -518,4 +534,299 @@ export const route = createProtectedOpenApiHono()
     } catch (e) {
       return internalServerError(c);
     }
+  })
+  .openapi(paginatedStorageBlockBoxesRoute, async (c) => {
+    const params = c.req.valid("param");
+
+    try {
+      const [storages, blocks] = await Promise.all([
+        db
+          .select({ id: storagesTable.id })
+          .from(storagesTable)
+          .where(
+            and(
+              eq(storagesTable.id, params.id),
+              isNull(storagesTable.deletedAt)
+            )
+          ),
+        db
+          .select({ id: storageBlocksTable.id })
+          .from(storageBlocksTable)
+          .where(
+            and(
+              eq(storageBlocksTable.storageId, params.id),
+              eq(storageBlocksTable.id, params.blockId),
+              isNull(storageBlocksTable.deletedAt)
+            )
+          ),
+      ]);
+
+      const storage = storages[0];
+      const block = blocks[0];
+
+      if (!storage) {
+        return badRequestError(c, { message: "Storage does not exists" });
+      }
+      if (!block) {
+        return badRequestError(c, { message: "Storage block does not exists" });
+      }
+    } catch (e) {
+      return internalServerError(c);
+    }
+
+    const { name, page, perPage } = c.req.valid("query");
+
+    try {
+      const nameLike = name ? `${name}%` : "%";
+
+      const [boxesResults, totalResults] = await Promise.allSettled([
+        db
+          .select({
+            id: storageBoxesTable.id,
+            grade: storageBoxesTable.grade,
+            price: storageBoxesTable.price,
+            weight: storageBoxesTable.weight,
+            subGrade: storageBoxesTable.subGrade,
+            totalBoxes: storageBoxesTable.totalBoxes,
+            checkedOutBoxes: storageBoxesTable.checkedOutBoxes,
+            product: {
+              id: productsTable.id,
+              name: productsTable.name,
+            },
+            user: {
+              id: usersTable.id,
+              displayName: usersTable.displayName,
+            },
+          })
+          .from(storageBoxesTable)
+          .innerJoin(usersTable, eq(usersTable.id, storageBoxesTable.userId))
+          .innerJoin(
+            productsTable,
+            eq(productsTable.id, storageBoxesTable.productId)
+          )
+          .where(
+            and(
+              isNull(storageBoxesTable.checkedOutAt),
+              isNull(storageBoxesTable.deletedAt),
+              like(productsTable.name, nameLike)
+            )
+          )
+          .orderBy(desc(storageBoxesTable.createdAt))
+          .offset((page - 1) * perPage)
+          .limit(perPage),
+        db
+          .select({
+            total: sql`count(*)`.mapWith(Number).as("total"),
+          })
+          .from(storageBoxesTable)
+          .innerJoin(
+            productsTable,
+            eq(productsTable.id, storageBoxesTable.productId)
+          )
+          .where(
+            and(
+              isNull(storageBoxesTable.checkedOutAt),
+              isNull(storageBoxesTable.deletedAt),
+              like(productsTable.name, nameLike)
+            )
+          ),
+      ]);
+
+      if (
+        boxesResults.status === "rejected" ||
+        totalResults.status === "rejected"
+      ) {
+        throw new Error("Something went wrong");
+      }
+
+      return c.json(
+        {
+          ok: true,
+          data: {
+            boxes: boxesResults.value,
+            pagination: {
+              page,
+              perPage,
+              total: Math.ceil(totalResults.value[0].total / perPage),
+            },
+          },
+        },
+        200
+      );
+    } catch (e) {
+      return internalServerError(c);
+    }
+  })
+  .openapi(createStorageBoxRoute, async (c) => {
+    const params = c.req.valid("param");
+    const body = c.req.valid("json");
+
+    const { error, data } = await checkDoesExistsInDB({
+      storageId: params.id,
+      blockId: params.blockId,
+      userId: body.userId,
+      countryIds: body.countries,
+      productId: body.productId,
+    });
+
+    if (error || !data) {
+      return internalServerError(c);
+    }
+
+    const { storage, product, block, user, countriesExists } = data;
+
+    if (!storage) {
+      return badRequestError(c, { message: "Storage does not exists" });
+    }
+    if (!block) {
+      return badRequestError(c, { message: "Storage block does not exists" });
+    }
+    if (!product) {
+      return badRequestError(c, { message: "Product does not exists" });
+    }
+    if (!user) {
+      return badRequestError(c, { message: "User does not exists" });
+    }
+    if (!countriesExists) {
+      return badRequestError(c, { message: "Invalid countries" });
+    }
+
+    try {
+      const authUser = c.get("user");
+
+      const box = await db.transaction(async (tx) => {
+        const [box] = await tx
+          .insert(storageBoxesTable)
+          .values({
+            productId: body.productId,
+            userId: body.userId,
+            blockId: params.blockId,
+            grade: body.grade,
+            price: body.price,
+            totalBoxes: body.totalBoxes,
+            weight: body.weight,
+            subGrade: body.subGrade,
+          })
+          .returning({
+            id: storageBoxesTable.id,
+            productId: storageBoxesTable.productId,
+            userId: storageBoxesTable.userId,
+            blockId: storageBoxesTable.blockId,
+            grade: storageBoxesTable.grade,
+            price: storageBoxesTable.price,
+            totalBoxes: storageBoxesTable.totalBoxes,
+            weight: storageBoxesTable.weight,
+            subGrade: storageBoxesTable.subGrade,
+          });
+
+        await pMap(
+          body.countries,
+          async (countryId) => {
+            await tx
+              .insert(storageBoxesCountriesTable)
+              .values({ boxId: box.id, countryId });
+          },
+          { concurrency: 6 }
+        );
+
+        const message = `Added ${box.totalBoxes > 1 ? `a set of ${box.totalBoxes}` : `a`} '${product.name}' (priced at ${box.price}) to block '${block.name}'.`;
+
+        await tx.insert(storageActivityLogsTable).values({
+          message,
+          action: STORAGE_ACTIONS.ADD_BOX,
+          storageId: params.id,
+          userId: authUser.id,
+        });
+
+        return box;
+      });
+
+      return c.json(
+        {
+          ok: true,
+          data: { box },
+        },
+        201
+      );
+    } catch (e) {
+      return internalServerError(c);
+    }
   });
+
+type CheckDoesExistsInDBProps = {
+  storageId: string;
+  blockId: string;
+  productId: string;
+  userId: string;
+  countryIds: string[];
+};
+
+async function checkDoesExistsInDB({
+  storageId,
+  blockId,
+  productId,
+  userId,
+  countryIds,
+}: CheckDoesExistsInDBProps) {
+  try {
+    const countriesSQ = db
+      .select({ count: countDistinct(countriesTable.id).as("total_distinct") })
+      .from(countriesTable)
+      .where(inArray(countriesTable.id, countryIds))
+      .as("countries_subquery");
+
+    const [storages, blocks, products, users, countries] = await Promise.all([
+      db
+        .select({ id: storagesTable.id })
+        .from(storagesTable)
+        .where(
+          and(eq(storagesTable.id, storageId), isNull(storagesTable.deletedAt))
+        ), // check storage exists
+      db
+        .select({ id: storageBlocksTable.id, name: storageBlocksTable.name })
+        .from(storageBlocksTable)
+        .where(
+          and(
+            eq(storageBlocksTable.storageId, storageId),
+            eq(storageBlocksTable.id, blockId),
+            isNull(storageBlocksTable.deletedAt)
+          )
+        ), // check storage block exists
+      db
+        .select({ id: productsTable.id, name: productsTable.name })
+        .from(productsTable)
+        .where(
+          and(eq(productsTable.id, productId), isNull(productsTable.deletedAt))
+        ), // check product exists
+      db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.id, userId)), // check user exists
+      db
+        .select({
+          allExists: sql`
+            case
+              when "total_distinct" = ${countryIds.length} then 1
+              else 0
+            end
+          `
+            .mapWith(Boolean)
+            .as("all_exists"),
+        })
+        .from(countriesSQ), // check all provided country exists
+    ]);
+
+    return {
+      data: {
+        user: users[0],
+        block: blocks[0],
+        storage: storages[0],
+        product: products[0],
+        countriesExists: countries[0].allExists,
+      },
+      error: undefined,
+    };
+  } catch (e) {
+    return { data: undefined, error: e };
+  }
+}

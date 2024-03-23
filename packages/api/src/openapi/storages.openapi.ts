@@ -14,6 +14,10 @@ import {
   deleteStorageResponseSchema,
   getStorageLogsResponseSchema,
   getStorageLogsSearchSchema,
+  paginatedStorageBlockBoxesSearchSchema,
+  paginatedStorageBlockBoxesResponseSchema,
+  createStorageBoxSchema,
+  createStorageBoxResponseSchema,
 } from "../common/storages.schema.js";
 
 const storageIdSchema = z.string().openapi({
@@ -231,6 +235,115 @@ export const getStorageLogsRoute = createRoute({
       content: {
         "application/json": {
           schema: getStorageLogsResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: badRequestErrorSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: forbiddenErrorSchema,
+        },
+      },
+    },
+    500: {
+      description: "Something went wrong",
+      content: {
+        "application/json": {
+          schema: internalServerErrorSchema,
+        },
+      },
+    },
+  },
+});
+
+const storageBlockIdSchema = z.string().openapi({
+  param: {
+    name: "blockId",
+    in: "path",
+  },
+  example: "lf4148s3nex9qe3h3tsqje2d",
+});
+
+export const paginatedStorageBlockBoxesRoute = createRoute({
+  path: "/{id}/blocks/{blockId}/boxes",
+  method: "get",
+  tags: ["Storages"],
+  request: {
+    query: paginatedStorageBlockBoxesSearchSchema,
+    params: z.object({
+      id: storageIdSchema,
+      blockId: storageBlockIdSchema,
+    }),
+  },
+  responses: {
+    200: {
+      description: "Get storage block boxes",
+      content: {
+        "application/json": {
+          schema: paginatedStorageBlockBoxesResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: badRequestErrorSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: forbiddenErrorSchema,
+        },
+      },
+    },
+    500: {
+      description: "Something went wrong",
+      content: {
+        "application/json": {
+          schema: internalServerErrorSchema,
+        },
+      },
+    },
+  },
+});
+
+export const createStorageBoxRoute = createRoute({
+  path: "/{id}/blocks/{blockId}/boxes",
+  method: "post",
+  tags: ["Storages"],
+  request: {
+    params: z.object({
+      id: storageIdSchema,
+      blockId: storageBlockIdSchema,
+    }),
+    body: {
+      description: "Create storage box body payload",
+      content: {
+        "application/json": {
+          schema: createStorageBoxSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Create storage box",
+      content: {
+        "application/json": {
+          schema: createStorageBoxResponseSchema,
         },
       },
     },
