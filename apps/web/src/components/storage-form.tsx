@@ -90,6 +90,7 @@ export function StorageForm({
     values: {
       name: storage?.name ?? "",
       capacity: storage?.capacity ?? "",
+      // @ts-expect-error dimension will be one of mentioned in schema
       dimension: storage?.dimension ?? "1x1",
       productId: storage?.product?.id ?? "",
       superVisorId: storage?.superVisor?.id ?? "",
