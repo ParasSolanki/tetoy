@@ -109,11 +109,21 @@ export const storageDimensionMap = {
 >;
 
 export const createStorageSchema = z.object({
-  name: z.string(),
-  productId: z.string(),
+  name: z
+    .string({ required_error: "Name is required" })
+    .min(1, "Name is required")
+    .max(50, "Name can at most contain 50 character(s)"),
+  productId: z
+    .string({ required_error: "Product is required" })
+    .min(1, "Product is required"),
   dimension: storageDimensionSchema,
-  capacity: z.string(),
-  superVisorId: z.string(),
+  capacity: z
+    .string({ required_error: "Capacity is required" })
+    .min(1, "Capacity is required")
+    .max(50, "Capacity can at most contain 50 character(s)"),
+  superVisorId: z
+    .string({ required_error: "Super visor is required" })
+    .min(1, "Super visor is required"),
 });
 
 export const createStorageResponseSchema = successSchema.extend({
