@@ -606,6 +606,7 @@ export const route = createProtectedOpenApiHono()
           )
           .where(
             and(
+              eq(storageBoxesTable.id, params.blockId),
               isNull(storageBoxesTable.checkedOutAt),
               isNull(storageBoxesTable.deletedAt),
               like(productsTable.name, nameLike)
