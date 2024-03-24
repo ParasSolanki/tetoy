@@ -2,7 +2,12 @@ import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { storagesQuries } from "~/common/keys/storage";
 import { format } from "date-fns";
-import { ActivityIcon, Trash2Icon } from "lucide-react";
+import {
+  ActivityIcon,
+  BaggageClaimIcon,
+  PackagePlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { Virtuoso } from "react-virtuoso";
 import { Route as StorageIdRoute } from "../route";
 
@@ -35,9 +40,19 @@ function StorageDetailActivityPage() {
                   {format(new Date(l.timestamp), "PPP")}
                 </strong>
 
-                <span className="relative flex size-8 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground before:absolute before:left-1/2 before:top-full before:h-full before:w-1 before:-translate-x-1/2 before:bg-muted after:absolute after:bottom-full after:left-1/2 after:h-full after:w-1 after:-translate-x-1/2 after:bg-muted">
-                  {l.action === "DELETE" && <Trash2Icon className="size-4" />}
-                  {l.action === "CREATE" && <ActivityIcon className="size-4" />}
+                <span className="relative flex size-8 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground before:absolute before:left-1/2 before:top-full before:h-full before:w-1 before:-translate-x-1/2 before:bg-muted after:absolute after:bottom-full after:left-1/2 after:h-full after:w-1 after:-translate-x-1/2 after:bg-muted md:size-9">
+                  {l.action === "CREATE" && (
+                    <ActivityIcon className="size-4 md:size-5 " />
+                  )}
+                  {l.action === "DELETE" && (
+                    <Trash2Icon className="size-4 md:size-5 " />
+                  )}
+                  {l.action === "ADD_BOX" && (
+                    <PackagePlusIcon className="size-4 md:size-5 " />
+                  )}
+                  {l.action === "CHECKOUT_BOX" && (
+                    <BaggageClaimIcon className="size-4 md:size-5 " />
+                  )}
                 </span>
 
                 <div className="text-muted-foreground">
