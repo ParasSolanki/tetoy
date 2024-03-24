@@ -307,3 +307,5 @@ export const createStorageBoxResponseSchema = successSchema.extend({
     }),
   }),
 });
+
+export const deleteStorageBoxResponseSchema = successSchema;
