@@ -11,6 +11,7 @@ import {
   sql,
 } from "@tetoy/db/drizzle";
 import {
+  checkoutStorageBoxRoute,
   createStorageBoxRoute,
   createStorageRoute,
   deleteStorageBoxRoute,
@@ -843,6 +844,150 @@ export const route = createProtectedOpenApiHono()
           storageId: params.id,
           userId: authUser.id,
           action: STORAGE_ACTIONS.DELETE_BOX,
+        });
+      });
+
+      return c.json({ ok: true }, 200);
+    } catch (e) {
+      return internalServerError(c);
+    }
+  })
+  .openapi(checkoutStorageBoxRoute, async (c) => {
+    const params = c.req.valid("param");
+
+    try {
+      const [storages, blocks] = await Promise.all([
+        db
+          .select({ id: storagesTable.id })
+          .from(storagesTable)
+          .where(
+            and(
+              eq(storagesTable.id, params.id),
+              isNull(storagesTable.deletedAt)
+            )
+          ),
+        db
+          .select({ id: storageBlocksTable.id })
+          .from(storageBlocksTable)
+          .where(
+            and(
+              eq(storageBlocksTable.storageId, params.id),
+              eq(storageBlocksTable.id, params.blockId),
+              isNull(storageBlocksTable.deletedAt)
+            )
+          ),
+      ]);
+
+      const storage = storages[0];
+      const block = blocks[0];
+
+      if (!storage) {
+        return badRequestError(c, { message: "Storage does not exists" });
+      }
+      if (!block) {
+        return badRequestError(c, { message: "Storage block does not exists" });
+      }
+    } catch (e) {
+      return internalServerError(c);
+    }
+
+    try {
+      const [box] = await db
+        .select({
+          id: storageBoxesTable.id,
+          totalBoxes: storageBoxesTable.totalBoxes,
+          checkedOutBoxes: storageBoxesTable.checkedOutBoxes,
+          checkedOutAt: storageBoxesTable.checkedOutAt,
+        })
+        .from(storageBoxesTable)
+        .where(
+          and(
+            eq(storageBoxesTable.blockId, params.blockId),
+            eq(storageBoxesTable.id, params.boxId),
+            isNull(storageBoxesTable.deletedAt)
+          )
+        );
+
+      if (!box) {
+        return badRequestError(c, { message: "Storage box does not exists" });
+      }
+
+      const body = c.req.valid("json");
+
+      const remainingBoxes = box.totalBoxes - box.checkedOutBoxes;
+      // all checked out
+      if (remainingBoxes === 0 || box.checkedOutAt) {
+        return badRequestError(c, {
+          message:
+            "All the boxes are already checkedout you cannot checkout more",
+        });
+      }
+
+      // boxes count is more than total boxes
+      if (body.boxes > remainingBoxes) {
+        return badRequestError(c, {
+          message: "Cannot checkout more boxes than the boxes available",
+        });
+      }
+
+      const isAllCheckout = body.boxes === remainingBoxes;
+      const date = new Date();
+      const authUser = c.get("user");
+
+      await db.transaction(async (tx) => {
+        const [box] = await tx
+          .select({
+            totalBoxes: storageBoxesTable.totalBoxes,
+            checkedOutBoxes: storageBoxesTable.checkedOutBoxes,
+            block: { name: storageBlocksTable.name },
+            product: { name: productsTable.name },
+          })
+          .from(storageBoxesTable)
+          .innerJoin(
+            storageBlocksTable,
+            and(
+              eq(storageBlocksTable.id, params.blockId),
+              isNull(storageBlocksTable.deletedAt)
+            )
+          )
+          .innerJoin(
+            productsTable,
+            and(
+              eq(productsTable.id, storageBoxesTable.productId),
+              isNull(productsTable.deletedAt)
+            )
+          )
+          .where(eq(storageBoxesTable.id, params.boxId));
+
+        // new checkout boxes count
+        const checkedOutBoxes = body.boxes + box.checkedOutBoxes;
+
+        await tx
+          .update(storageBoxesTable)
+          .set({
+            checkedOutBoxes,
+            updatedAt: date,
+            checkedOutAt: isAllCheckout ? date : null,
+          })
+          .where(eq(storageBoxesTable.id, params.boxId));
+
+        let message = "";
+
+        // all checkout on first try
+        if (box.checkedOutBoxes === 0 && isAllCheckout) {
+          message = `Checked out all ${box.totalBoxes} ${box.totalBoxes > 1 ? "boxes" : "box"} of '${box.product.name}' from '${box.block.name}' block.`;
+        } else if (isAllCheckout) {
+          // multiple try
+          message = `Checked out last remaining ${body.boxes} ${box.totalBoxes > 1 ? "boxes" : "box"} of '${box.product.name}' (${box.totalBoxes} total) from '${box.block.name}' block.`;
+        } else {
+          message = `Checked out ${body.boxes} ${body.boxes > 1 ? "boxes" : "box"} of '${box.product.name}' from '${box.block.name}' block.`;
+        }
+
+        await tx.insert(storageActivityLogsTable).values({
+          message,
+          storageId: params.id,
+          userId: authUser.id,
+          action: STORAGE_ACTIONS.CHECKOUT_BOX,
         });
       });
 
