@@ -1,10 +1,11 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { storageDimensionMap } from "@tetoy/api/schema";
 import { storagesQuries } from "~/common/keys/storage";
 import type { FormattedBlock } from "~/common/keys/storage";
 import { StorageBoxesTable } from "~/components/storage-boxes-table";
 import { buttonVariants } from "~/components/ui/button";
+import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
 import * as React from "react";
 import { Route as StorageIdRoute } from "../route";
@@ -18,7 +19,7 @@ function StorageDetailsIndexPage() {
   const storageId = StorageIdRoute.useParams({ select: (p) => p.id });
   const searchBlock = StorageIdIndexRoute.useSearch({ select: (s) => s.block });
 
-  const { data } = useSuspenseQuery(storagesQuries.details(storageId));
+  const { data, isLoading } = useQuery(storagesQuries.details(storageId));
 
   const d = data?.data.storage.dimension
     ? // @ts-expect-error storage dimension is defined
@@ -54,6 +55,8 @@ function StorageDetailsIndexPage() {
     () => formattedBlocks.find((b) => b?.selected),
     [formattedBlocks],
   );
+
+  if (isLoading) return <StorageIdDetailsSkeleton />;
 
   if (!data) return "no data";
 
@@ -100,5 +103,15 @@ function StorageDetailsIndexPage() {
         </section>
       )}
     </>
+  );
+}
+
+function StorageIdDetailsSkeleton() {
+  return (
+    <div className="grid grid-cols-5 grid-rows-5 gap-4">
+      {Array.from({ length: 25 }).map((_x, id) => (
+        <Skeleton key={id} className="h-10 w-full" />
+      ))}
+    </div>
   );
 }

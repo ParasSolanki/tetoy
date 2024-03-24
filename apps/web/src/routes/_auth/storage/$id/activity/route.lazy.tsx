@@ -1,6 +1,7 @@
-import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { storagesQuries } from "~/common/keys/storage";
+import { Skeleton } from "~/components/ui/skeleton";
 import { format } from "date-fns";
 import {
   ActivityIcon,
@@ -17,9 +18,11 @@ export const Route = createLazyFileRoute("/_auth/storage/$id/activity")({
 
 function StorageDetailActivityPage() {
   const storageId = StorageIdRoute.useParams({ select: (p) => p.id });
-  const { data, fetchNextPage } = useSuspenseInfiniteQuery(
+  const { data, isLoading, fetchNextPage } = useInfiniteQuery(
     storagesQuries.logs({ id: storageId }),
   );
+
+  if (isLoading || !data) return <StorageDetailActivitySkeleton />;
 
   return (
     <Virtuoso
@@ -73,5 +76,15 @@ function StorageDetailActivityPage() {
         );
       }}
     />
+  );
+}
+
+function StorageDetailActivitySkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-6 w-80" />
+      <Skeleton className="h-6 w-40" />
+      <Skeleton className="h-6 w-60" />
+    </div>
   );
 }
