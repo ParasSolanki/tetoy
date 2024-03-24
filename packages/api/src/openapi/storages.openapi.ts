@@ -18,6 +18,7 @@ import {
   paginatedStorageBlockBoxesResponseSchema,
   createStorageBoxSchema,
   createStorageBoxResponseSchema,
+  deleteStorageBoxResponseSchema,
 } from "../common/storages.schema.js";
 
 const storageIdSchema = z.string().openapi({
@@ -344,6 +345,61 @@ export const createStorageBoxRoute = createRoute({
       content: {
         "application/json": {
           schema: createStorageBoxResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: badRequestErrorSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: forbiddenErrorSchema,
+        },
+      },
+    },
+    500: {
+      description: "Something went wrong",
+      content: {
+        "application/json": {
+          schema: internalServerErrorSchema,
+        },
+      },
+    },
+  },
+});
+
+const storageBoxIdSchema = z.string().openapi({
+  param: {
+    name: "boxId",
+    in: "path",
+  },
+  example: "lf4148s3nex9qe3h3tsqje2d",
+});
+
+export const deleteStorageBoxRoute = createRoute({
+  path: "/{id}/blocks/{blockId}/boxes/{boxId}",
+  method: "delete",
+  tags: ["Storages"],
+  request: {
+    params: z.object({
+      id: storageIdSchema,
+      blockId: storageBlockIdSchema,
+      boxId: storageBoxIdSchema,
+    }),
+  },
+  responses: {
+    200: {
+      description: "Delete storage box",
+      content: {
+        "application/json": {
+          schema: deleteStorageBoxResponseSchema,
         },
       },
     },

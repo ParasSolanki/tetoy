@@ -13,6 +13,7 @@ import {
 import {
   createStorageBoxRoute,
   createStorageRoute,
+  deleteStorageBoxRoute,
   deleteStorageRoute,
   getPaginatedStoragesRoute,
   getStorageLogsRoute,
@@ -748,6 +749,104 @@ export const route = createProtectedOpenApiHono()
         },
         201
       );
+    } catch (e) {
+      return internalServerError(c);
+    }
+  })
+  .openapi(deleteStorageBoxRoute, async (c) => {
+    const params = c.req.valid("param");
+
+    try {
+      const [storages, blocks, boxes] = await Promise.all([
+        db
+          .select({ id: storagesTable.id })
+          .from(storagesTable)
+          .where(
+            and(
+              eq(storagesTable.id, params.id),
+              isNull(storagesTable.deletedAt)
+            )
+          ),
+        db
+          .select({ id: storageBlocksTable.id })
+          .from(storageBlocksTable)
+          .where(
+            and(
+              eq(storageBlocksTable.storageId, params.id),
+              eq(storageBlocksTable.id, params.blockId),
+              isNull(storageBlocksTable.deletedAt)
+            )
+          ),
+        db
+          .select({
+            id: storageBoxesTable.id,
+            block: { name: storageBlocksTable.name },
+            product: { name: productsTable.name },
+          })
+          .from(storageBoxesTable)
+          .innerJoin(
+            storageBlocksTable,
+            and(
+              eq(storageBlocksTable.id, params.blockId),
+              isNull(storageBlocksTable.deletedAt)
+            )
+          )
+          .innerJoin(
+            productsTable,
+            and(
+              eq(productsTable.id, storageBoxesTable.productId),
+              isNull(productsTable.deletedAt)
+            )
+          )
+          .where(
+            and(
+              eq(storageBoxesTable.blockId, params.blockId),
+              eq(storageBoxesTable.id, params.boxId),
+              isNull(storageBoxesTable.deletedAt)
+            )
+          ),
+      ]);
+
+      const storage = storages[0];
+      const block = blocks[0];
+      const box = boxes[0];
+
+      if (!storage) {
+        return badRequestError(c, { message: "Storage does not exists" });
+      }
+      if (!block) {
+        return badRequestError(c, { message: "Storage block does not exists" });
+      }
+      if (!box) {
+        return badRequestError(c, { message: "Storage box does not exists" });
+      }
+
+      const date = new Date();
+      const authUser = c.get("user");
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(storageBoxesTable)
+          .set({
+            updatedAt: date,
+            deletedAt: date,
+          })
+          .where(
+            and(
+              eq(storageBoxesTable.blockId, params.blockId),
+              eq(storageBoxesTable.id, params.boxId)
+            )
+          );
+
+        await tx.insert(storageActivityLogsTable).values({
+          message: `Deleted '${box.product.name}' box in '${box.block.name}'.`,
+          storageId: params.id,
+          userId: authUser.id,
+          action: STORAGE_ACTIONS.DELETE_BOX,
+        });
+      });
+
+      return c.json({ ok: true }, 200);
     } catch (e) {
       return internalServerError(c);
     }
