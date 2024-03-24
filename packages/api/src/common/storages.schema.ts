@@ -270,7 +270,7 @@ export const createStorageBoxSchema = z.object({
   productId: z.string({ required_error: "Product id is required" }),
   totalBoxes: z
     .number({ required_error: "Total boxes are required" })
-    .min(0, "Total boxes must be greater than or equal to 0"),
+    .min(1, "Total boxes must be greater than or equal to 1"),
   grade: z
     .string({ required_error: "Grade is required" })
     .min(0, "Grade is required")
@@ -309,3 +309,11 @@ export const createStorageBoxResponseSchema = successSchema.extend({
 });
 
 export const deleteStorageBoxResponseSchema = successSchema;
+
+export const checkoutStorageBoxSchema = z.object({
+  boxes: z
+    .number({ required_error: "Boxes are required" })
+    .min(1, "Boxes must be greater than or equal to 1"),
+});
+
+export const checkoutStorageBoxResponseSchema = successSchema;

@@ -19,6 +19,8 @@ import {
   createStorageBoxSchema,
   createStorageBoxResponseSchema,
   deleteStorageBoxResponseSchema,
+  checkoutStorageBoxSchema,
+  checkoutStorageBoxResponseSchema,
 } from "../common/storages.schema.js";
 
 const storageIdSchema = z.string().openapi({
@@ -400,6 +402,61 @@ export const deleteStorageBoxRoute = createRoute({
       content: {
         "application/json": {
           schema: deleteStorageBoxResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: badRequestErrorSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: forbiddenErrorSchema,
+        },
+      },
+    },
+    500: {
+      description: "Something went wrong",
+      content: {
+        "application/json": {
+          schema: internalServerErrorSchema,
+        },
+      },
+    },
+  },
+});
+
+export const checkoutStorageBoxRoute = createRoute({
+  path: "/{id}/blocks/{blockId}/boxes/{boxId}",
+  method: "patch",
+  tags: ["Storages"],
+  request: {
+    params: z.object({
+      id: storageIdSchema,
+      blockId: storageBlockIdSchema,
+      boxId: storageBoxIdSchema,
+    }),
+    body: {
+      description: "Checkout boxes body payload",
+      content: {
+        "application/json": {
+          schema: checkoutStorageBoxSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Checkout storage boxes",
+      content: {
+        "application/json": {
+          schema: checkoutStorageBoxResponseSchema,
         },
       },
     },
