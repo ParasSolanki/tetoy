@@ -243,6 +243,13 @@ export const paginatedStorageBlockBoxesResponseSchema = successSchema.extend({
         subGrade: z.string().nullable(),
         totalBoxes: z.number(),
         checkedOutBoxes: z.number(),
+        createdAt: z.string(),
+        block: z
+          .object({
+            id: z.string(),
+            name: z.string(),
+          })
+          .nullable(),
         user: z
           .object({
             id: z.string(),

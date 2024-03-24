@@ -590,6 +590,11 @@ export const route = createProtectedOpenApiHono()
             subGrade: storageBoxesTable.subGrade,
             totalBoxes: storageBoxesTable.totalBoxes,
             checkedOutBoxes: storageBoxesTable.checkedOutBoxes,
+            createdAt: storageBoxesTable.createdAt,
+            block: {
+              id: storageBlocksTable.id,
+              name: storageBlocksTable.name,
+            },
             product: {
               id: productsTable.id,
               name: productsTable.name,
@@ -600,6 +605,10 @@ export const route = createProtectedOpenApiHono()
             },
           })
           .from(storageBoxesTable)
+          .innerJoin(
+            storageBlocksTable,
+            eq(storageBlocksTable.id, storageBoxesTable.blockId)
+          )
           .innerJoin(usersTable, eq(usersTable.id, storageBoxesTable.userId))
           .innerJoin(
             productsTable,
@@ -607,7 +616,7 @@ export const route = createProtectedOpenApiHono()
           )
           .where(
             and(
-              eq(storageBoxesTable.id, params.blockId),
+              eq(storageBoxesTable.blockId, params.blockId),
               isNull(storageBoxesTable.checkedOutAt),
               isNull(storageBoxesTable.deletedAt),
               like(productsTable.name, nameLike)

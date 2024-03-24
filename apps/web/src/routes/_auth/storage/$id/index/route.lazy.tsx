@@ -1,21 +1,18 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { storageDimensionMap } from "@tetoy/api/schema";
-import { storageBlockSchema, storagesQuries } from "~/common/keys/storage";
+import { storagesQuries } from "~/common/keys/storage";
+import type { FormattedBlock } from "~/common/keys/storage";
+import { StorageBoxesTable } from "~/components/storage-boxes-table";
 import { buttonVariants } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 import * as React from "react";
-import { z } from "zod";
 import { Route as StorageIdRoute } from "../route";
 import { Route as StorageIdIndexRoute } from "./route";
 
 export const Route = createLazyFileRoute("/_auth/storage/$id/")({
   component: StorageDetailsIndexPage,
 });
-
-type StorageBlock = z.infer<typeof storageBlockSchema>[number];
-
-type FormattedBlock = StorageBlock & { selected: boolean };
 
 function StorageDetailsIndexPage() {
   const storageId = StorageIdRoute.useParams({ select: (p) => p.id });
@@ -53,10 +50,15 @@ function StorageDetailsIndexPage() {
     return grid.flatMap((g) => g);
   }, [data?.data.storage.blocks, searchBlock]);
 
+  const selectedBlock = React.useMemo(
+    () => formattedBlocks.find((b) => b?.selected),
+    [formattedBlocks],
+  );
+
   if (!data) return "no data";
 
   return (
-    <div>
+    <>
       <section>
         <div
           className="grid grid-cols-1 gap-4"
@@ -75,7 +77,7 @@ function StorageDetailsIndexPage() {
                 to="/storage/$id/"
                 key={b.id}
                 params={{ id: storageId }}
-                search={{ block: b.id }}
+                search={{ block: b.id, page: 1, perPage: 20 }}
                 data-selected={b.selected}
                 className={cn(
                   buttonVariants({
@@ -92,6 +94,11 @@ function StorageDetailsIndexPage() {
           )}
         </div>
       </section>
-    </div>
+      {selectedBlock && (
+        <section>
+          <StorageBoxesTable block={selectedBlock} />
+        </section>
+      )}
+    </>
   );
 }

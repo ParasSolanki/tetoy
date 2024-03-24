@@ -3,6 +3,8 @@ import {
   getStorageLogsResponseSchema,
   getStorageLogsSearchSchema,
   getStorageResponseSchema,
+  paginatedStorageBlockBoxesResponseSchema,
+  paginatedStorageBlockBoxesSearchSchema,
   paginatedStoragesResponseSchema,
   paginatedStoragesSearchSchema,
 } from "@tetoy/api/schema";
@@ -22,10 +24,21 @@ export const storageBlockSchema = getStorageResponseSchema.shape.data
   .shape.storage.pick({ blocks: true }).shape.blocks;
 
 export const storageIdSchema = z.string();
+export const storageBlockIdSchema = z.string();
+
+export const storageBoxesSearchSchema = z.object({
+  name: paginatedStorageBlockBoxesSearchSchema.shape.name,
+  page: paginatedStorageBlockBoxesSearchSchema.shape.page.catch(1),
+  perPage: paginatedStorageBlockBoxesSearchSchema.shape.perPage.catch(20),
+});
 
 type StorageLogValues = { id: z.infer<typeof storageIdSchema> } & z.infer<
   typeof getStorageLogsSearchSchema
 >;
+
+export type StorageBlock = z.infer<typeof storageBlockSchema>[number];
+
+export type FormattedBlock = StorageBlock & { selected: boolean };
 
 export const storagesKeys = {
   all: ["storages"] as const,
@@ -35,6 +48,19 @@ export const storagesKeys = {
     [...storagesKeys.all, "details", { id }] as const,
   logs: (values: StorageLogValues) =>
     [...storagesKeys.all, "logs", values] as const,
+  boxesList: (
+    storageId: z.infer<typeof storageIdSchema>,
+    blockId: z.infer<typeof storageBlockIdSchema>,
+    values: z.infer<typeof storageBoxesSearchSchema>,
+  ) =>
+    [
+      ...storagesKeys.details(storageId),
+      "blocks",
+      { blockId },
+      "boxes",
+      "list",
+      values,
+    ] as const,
 };
 
 export const storagesQuries = {
@@ -85,5 +111,32 @@ export const storagesQuries = {
       initialPageParam: 0,
       getPreviousPageParam: (firstPage) => firstPage.data.cursor ?? undefined,
       getNextPageParam: (lastPage) => lastPage.data.cursor ?? undefined,
+    }),
+  boxesList: (
+    storageId: z.infer<typeof storageIdSchema>,
+    blockId: z.infer<typeof storageBlockIdSchema>,
+    values: z.infer<typeof storageBoxesSearchSchema>,
+  ) =>
+    queryOptions({
+      staleTime: 60 * 1000,
+      queryKey: storagesKeys.boxesList(storageId, blockId, values),
+      queryFn: async () => {
+        const searchParams = new URLSearchParams();
+
+        searchParams.set("page", values.page.toString());
+        searchParams.set("perPage", values.perPage.toString());
+
+        if (values.name) searchParams.set("name", values.name);
+
+        const res = await api.get(
+          `storages/${storageId}/blocks/${blockId}/boxes`,
+          {
+            searchParams,
+          },
+        );
+
+        return paginatedStorageBlockBoxesResponseSchema.parse(await res.json());
+      },
+      placeholderData: (data) => data,
     }),
 };

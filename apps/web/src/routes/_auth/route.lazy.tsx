@@ -31,7 +31,7 @@ function AuthLayout() {
   return (
     <main className="md:flex">
       <Sidebar />
-      <div className="relative min-w-0 flex-grow space-y-4 px-4">
+      <div className="relative mb-8 min-w-0 flex-grow space-y-4 px-4">
         <div className="flex items-center justify-between pt-3">
           <time className="text-muted-foreground">
             {format(new Date(), "PPPP")}

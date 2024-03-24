@@ -63,7 +63,11 @@ function StorageDetailsPage() {
         <div className="flex items-center space-x-3">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="manage" asChild>
-              <Link to="/storage/$id/" params={{ id: storageId }}>
+              <Link
+                to="/storage/$id/"
+                params={{ id: storageId }}
+                search={{ page: 1, perPage: 20 }}
+              >
                 Manage
               </Link>
             </TabsTrigger>

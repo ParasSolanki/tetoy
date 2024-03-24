@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import {
   flexRender,
   getCoreRowModel,
@@ -14,10 +14,11 @@ import type {
   VisibilityState,
 } from "@tanstack/react-table";
 import {
-  deleteStorageResponseSchema,
-  paginatedStoragesResponseSchema,
+  deleteStorageBoxResponseSchema,
+  paginatedStorageBlockBoxesResponseSchema,
 } from "@tetoy/api/schema";
 import { storagesKeys, storagesQuries } from "~/common/keys/storage";
+import type { FormattedBlock } from "~/common/keys/storage";
 import {
   AlertDialogAction,
   AlertDialogCancel,
@@ -37,7 +38,6 @@ import {
   DropdownMenuAlertDialogItem,
   DropdownMenuContent,
   DropdownMenuDialogItem,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
@@ -49,16 +49,11 @@ import {
   TableRow,
   Table as UiTable,
 } from "~/components/ui/table";
-import { Route as StoragesRoute } from "~/routes/_auth/storages/route";
+import { Route as StoragesIdIndexRoute } from "~/routes/_auth/storage/$id/index/route";
 import { api } from "~/utils/api-client";
 import { format } from "date-fns";
 import { HTTPError } from "ky";
-import {
-  LinkIcon,
-  MoreHorizontalIcon,
-  PencilIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { useDebounceCallback } from "usehooks-ts";
@@ -67,84 +62,76 @@ import { Button } from "./ui/button";
 import { DataTableColumnHeader } from "./ui/data-table/data-table-column-header";
 import { DataTablePagination } from "./ui/data-table/data-table-pagination";
 
-const storagesSchema = paginatedStoragesResponseSchema.shape.data.pick({
-  storages: true,
-}).shape.storages;
+const boxesSchema = paginatedStorageBlockBoxesResponseSchema.shape.data.pick({
+  boxes: true,
+}).shape.boxes;
 
-type Storage = z.infer<typeof storagesSchema>[number];
+type Box = z.infer<typeof boxesSchema>[number];
 
-const columns: ColumnDef<Storage>[] = [
-  {
-    accessorKey: "name",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Name" />
-    ),
-  },
-  {
-    accessorKey: "dimension",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Dimension" />
-    ),
-  },
-  {
-    accessorKey: "capacity",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Capacity" />
-    ),
-  },
+const columns: ColumnDef<Box>[] = [
   {
     id: "product",
-    accessorFn: (d) => (d.product ? d.product.name : ""),
+    accessorFn: ({ product }) => product?.name ?? "",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Product" />
     ),
   },
   {
-    id: "category",
-    accessorFn: (d) =>
-      d.product && d.product.category ? d.product.category.name : "",
+    accessorKey: "weight",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Category" />
+      <DataTableColumnHeader column={column} title="Weight" />
     ),
   },
   {
-    id: "subCategory",
-    accessorFn: (d) =>
-      d.product && d.product.subCategory ? d.product.subCategory.name : "",
+    accessorKey: "price",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Sub Category" />
+      <DataTableColumnHeader column={column} title="Price" />
     ),
   },
   {
-    id: "superVisor",
-    accessorFn: (d) => (d.superVisor ? d.superVisor.displayName : ""),
+    accessorKey: "grade",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Sub Category" />
+      <DataTableColumnHeader column={column} title="Grade" />
     ),
   },
   {
     accessorKey: "createdAt",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Created At" />
+      <DataTableColumnHeader column={column} title="Created at" />
     ),
-    cell: ({ row }) => <span>{format(row.original.createdAt, "PPP")}</span>,
+    cell: ({ row }) => (
+      <span>{format(new Date(row.original.createdAt), "PPP")}</span>
+    ),
   },
   {
     id: "actions",
     header: () => (
       <div className="flex h-8 items-center font-medium">Actions</div>
     ),
-    cell: ({ row, table }) => <StoragesTableActions row={row} table={table} />,
+    cell: ({ row, table }) => (
+      <StorageBoxesTableActions row={row} table={table} />
+    ),
   },
 ];
 
-export function StoragesTable() {
+interface StorageBoxesTableProps {
+  block: FormattedBlock;
+}
+
+export function StorageBoxesTable({ block }: StorageBoxesTableProps) {
   const navigate = useNavigate();
-  const searchParams = StoragesRoute.useSearch({
-    select: (search) => search,
+  const storageId = StoragesIdIndexRoute.useParams({ select: (p) => p.id });
+  const searchParams = StoragesIdIndexRoute.useSearch({
+    select: (search) => ({
+      name: search.name,
+      page: search.page,
+      perPage: search.perPage,
+    }),
   });
 
-  const { data } = useQuery(storagesQuries.list(searchParams));
+  const { data } = useQuery(
+    storagesQuries.boxesList(storageId, block.id, searchParams),
+  );
   const pageCount = data?.data.pagination.total ?? 0;
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -170,8 +157,10 @@ export function StoragesTable() {
 
     const newPagination = updaterOrValue(pagination);
     navigate({
-      to: "/storages",
+      to: "/storage/$id/",
+      params: { id: storageId },
       search: {
+        block: block.id,
         name: globalFilter,
         page: newPagination.pageIndex + 1,
         perPage: newPagination.pageSize,
@@ -181,7 +170,7 @@ export function StoragesTable() {
   }
 
   const table = useReactTable({
-    data: data?.data.storages ?? [],
+    data: data?.data.boxes ?? [],
     columns,
     state: {
       sorting,
@@ -199,7 +188,8 @@ export function StoragesTable() {
   });
 
   return (
-    <div className="mt-10 space-y-4">
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold tracking-tight">{block.name}</h2>
       <StoragesTableToolbar table={table} />
       <div className="rounded-md border">
         <UiTable>
@@ -244,7 +234,7 @@ export function StoragesTable() {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No Storages.
+                  No Boxes.
                 </TableCell>
               </TableRow>
             )}
@@ -264,10 +254,12 @@ export function StoragesTableToolbar<TData>({
   table,
 }: StoragesToolbarProps<TData>) {
   const navigate = useNavigate();
+  const storageId = StoragesIdIndexRoute.useParams({ select: (p) => p.id });
   const debounced = useDebounceCallback((value: string) => {
     table.setGlobalFilter(value);
     navigate({
-      to: "/storages",
+      to: "/storage/$id/",
+      params: { id: storageId },
       search: {
         name: value,
         page:
@@ -294,13 +286,18 @@ export function StoragesTableToolbar<TData>({
   );
 }
 
-interface StoragesTableActions {
-  table: Table<Storage>;
-  row: Row<Storage>;
+interface StorageBoxesTableActions {
+  table: Table<Box>;
+  row: Row<Box>;
 }
 
-export function StoragesTableActions({ row }: StoragesTableActions) {
-  const storage = row.original;
+export function StorageBoxesTableActions({
+  table,
+  row,
+}: StorageBoxesTableActions) {
+  const storageId = StoragesIdIndexRoute.useParams({ select: (p) => p.id });
+
+  const box = row.original;
 
   const queryClient = useQueryClient();
 
@@ -310,23 +307,49 @@ export function StoragesTableActions({ row }: StoragesTableActions) {
   const dropdownMenuTriggerRef = React.useRef<HTMLButtonElement>(null);
   const focusRef = React.useRef<HTMLButtonElement | null>(null);
 
-  const { mutate: mutateDeleteProduct } = useMutation({
-    mutationKey: ["storages", "delete", storage.id],
+  const { mutate: mutateDeleteBox } = useMutation({
+    mutationKey: [
+      "storages",
+      storageId,
+      "block",
+      box.block?.id,
+      "boxes",
+      "delete",
+      box.id,
+    ],
     mutationFn: async () => {
-      const res = await api.delete(`storages/${storage.id}`);
+      if (!box.block?.id) {
+        throw new Error("Block id does not exists");
+      }
 
-      return deleteStorageResponseSchema.parse(await res.json());
+      const res = await api.delete(
+        `storages/${storageId}/blocks/${box.block.id}/boxes/${box.id}`,
+      );
+
+      return deleteStorageBoxResponseSchema.parse(await res.json());
     },
     onSuccess: () => {
-      toast.success("Storage deleted successfuly");
-      queryClient.invalidateQueries({ queryKey: storagesKeys.all });
+      toast.success("Box deleted successfuly");
+
+      if (box.block?.id) {
+        queryClient.invalidateQueries({
+          queryKey: storagesKeys.boxesList(storageId, box.block.id, {
+            name: table.getState().globalFilter,
+            page:
+              table.getPageCount() > 0
+                ? table.getState().pagination.pageIndex + 1
+                : 1,
+            perPage: table.getState().pagination.pageSize,
+          }),
+        });
+      }
     },
     onError: async (error) => {
       if (error instanceof HTTPError) {
         const data = await error.response.json();
         if (data.message) toast.error(data.message);
       } else {
-        toast.error("Something went wrong while deleting storage");
+        toast.error("Something went wrong while deleting box");
       }
     },
   });
@@ -365,15 +388,6 @@ export function StoragesTableActions({ row }: StoragesTableActions) {
           }
         }}
       >
-        <DropdownMenuItem asChild>
-          <Link
-            to="/storage/$id"
-            params={{ id: storage.id }}
-            search={{ page: 1, perPage: 20 }}
-          >
-            <LinkIcon className="mr-2 size-4" /> View
-          </Link>
-        </DropdownMenuItem>
         <DropdownMenuDialogItem
           triggerChildern={
             <>
@@ -404,16 +418,13 @@ export function StoragesTableActions({ row }: StoragesTableActions) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will delete storage.
+              This action cannot be undone. This will delete box.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction asChild>
-              <Button
-                variant="destructive"
-                onClick={() => mutateDeleteProduct()}
-              >
+              <Button variant="destructive" onClick={() => mutateDeleteBox()}>
                 Continue
               </Button>
             </AlertDialogAction>
