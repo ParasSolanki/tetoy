@@ -97,6 +97,11 @@ function StorageDetailsIndexPage() {
           )}
         </div>
       </section>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold tracking-tight">
+          {selectedBlock?.name}
+        </h2>
+      </div>
       {selectedBlock && (
         <section>
           <StorageBoxesTable block={selectedBlock} />
