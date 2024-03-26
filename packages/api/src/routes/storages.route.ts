@@ -638,6 +638,7 @@ export const route = createProtectedOpenApiHono()
               like(productsTable.name, nameLike)
             )
           )
+          .groupBy(storageBoxesTable.id)
           .orderBy(desc(storageBoxesTable.createdAt))
           .offset((page - 1) * perPage)
           .limit(perPage),

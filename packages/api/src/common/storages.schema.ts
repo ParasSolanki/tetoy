@@ -291,8 +291,7 @@ export const createStorageBoxSchema = z.object({
   subGrade: z
     .string()
     .max(50, "Sub grade can at most contain 50 character(s)")
-    .optional()
-    .nullable(),
+    .optional(),
   weight: z
     .number({ required_error: "Weight is required" })
     .min(0, "Weight must be greater than or equal to 0"),

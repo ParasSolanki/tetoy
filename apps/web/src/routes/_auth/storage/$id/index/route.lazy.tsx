@@ -1,13 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
-import { createLazyFileRoute, Link } from "@tanstack/react-router";
-import { storageDimensionMap } from "@tetoy/api/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { createLazyFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  createStorageBoxResponseSchema,
+  storageDimensionMap,
+} from "@tetoy/api/schema";
 import { storagesQuries } from "~/common/keys/storage";
 import type { FormattedBlock } from "~/common/keys/storage";
+import { StorageBoxForm } from "~/components/storage-box-form";
+import type { Box } from "~/components/storage-box-form";
 import { StorageBoxesTable } from "~/components/storage-boxes-table";
-import { buttonVariants } from "~/components/ui/button";
+import { Button, buttonVariants } from "~/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
+import { api } from "~/utils/api-client";
+import { HTTPError } from "ky";
 import * as React from "react";
+import { toast } from "sonner";
 import { Route as StorageIdRoute } from "../route";
 import { Route as StorageIdIndexRoute } from "./route";
 
@@ -101,6 +117,7 @@ function StorageDetailsIndexPage() {
         <h2 className="text-2xl font-bold tracking-tight">
           {selectedBlock?.name}
         </h2>
+        <AddBoxDialog />
       </div>
       {selectedBlock && (
         <section>
@@ -118,5 +135,74 @@ function StorageIdDetailsSkeleton() {
         <Skeleton key={id} className="h-10 w-full" />
       ))}
     </div>
+  );
+}
+
+function AddBoxDialog() {
+  const navigate = useNavigate();
+  const storageId = StorageIdRoute.useParams({ select: (p) => p.id });
+  const blockId = StorageIdIndexRoute.useSearch({ select: (s) => s.block });
+  const [open, setOpen] = React.useState(false);
+  const { isPending, mutate } = useMutation({
+    mutationKey: ["storage", { storageId }, "block", { blockId }, "box", "add"],
+    mutationFn: async (values: Box) => {
+      if (!blockId) {
+        throw new Error("block invalid");
+      }
+
+      const res = await api.post(
+        `storages/${storageId}/blocks/${blockId}/boxes`,
+        { json: values },
+      );
+
+      return createStorageBoxResponseSchema.parse(await res.json());
+    },
+    onSuccess: () => {
+      toast.success("Box added successfully");
+    },
+    onError: async (error) => {
+      if (error instanceof HTTPError) {
+        const data = await error.response.json();
+        if (data.message) toast.error(data.message);
+      } else {
+        toast.error("Something went wrong while addding box");
+      }
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Add Box</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add Box</DialogTitle>
+          <DialogDescription>
+            Add box details here. Click save when you're done.
+          </DialogDescription>
+        </DialogHeader>
+
+        <StorageBoxForm
+          isPending={isPending}
+          onSubmit={(values) =>
+            mutate(values, {
+              onSuccess: () => {
+                setOpen(false);
+                navigate({
+                  to: "/storage/$id/",
+                  params: { id: storageId },
+                  search: {
+                    block: blockId,
+                    page: 1,
+                    perPage: 20,
+                  },
+                });
+              },
+            })
+          }
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
