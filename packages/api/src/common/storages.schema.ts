@@ -244,6 +244,12 @@ export const paginatedStorageBlockBoxesResponseSchema = successSchema.extend({
         totalBoxes: z.number(),
         checkedOutBoxes: z.number(),
         createdAt: z.string(),
+        countries: z
+          .object({
+            id: z.string(),
+            name: z.string(),
+          })
+          .array(),
         block: z
           .object({
             id: z.string(),

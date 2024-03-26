@@ -603,6 +603,14 @@ export const route = createProtectedOpenApiHono()
               id: usersTable.id,
               displayName: usersTable.displayName,
             },
+            countries: sql`
+              case 
+                when count(${storageBoxesCountriesTable.id}) = 0 then json('[]')
+                else json_group_array(json_object('id', ${countriesTable.id},'name', ${countriesTable.name}))
+              end
+              `
+              .mapWith(String)
+              .as("countries"),
           })
           .from(storageBoxesTable)
           .innerJoin(
@@ -613,6 +621,14 @@ export const route = createProtectedOpenApiHono()
           .innerJoin(
             productsTable,
             eq(productsTable.id, storageBoxesTable.productId)
+          )
+          .leftJoin(
+            storageBoxesCountriesTable,
+            eq(storageBoxesCountriesTable.boxId, storageBoxesTable.id)
+          )
+          .leftJoin(
+            countriesTable,
+            eq(countriesTable.id, storageBoxesCountriesTable.countryId)
           )
           .where(
             and(
@@ -654,7 +670,10 @@ export const route = createProtectedOpenApiHono()
         {
           ok: true,
           data: {
-            boxes: boxesResults.value,
+            boxes: boxesResults.value.map((b) => ({
+              ...b,
+              countries: JSON.parse(b.countries),
+            })),
             pagination: {
               page,
               perPage,
